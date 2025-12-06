@@ -6,6 +6,7 @@
 #include "Input.h"
 #include "AssetManager.h"
 #include "Renderer.h"
+#include "Camera.h"
 
 struct Engine
 {
@@ -14,7 +15,13 @@ struct Engine
 
 	std::unique_ptr<Input> input;
 	std::unique_ptr<AssetManager> assets;
+	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;
+
+	bool debugCameraEnabled = true;
+
+	double fixedDelta = 1.0 / 60.0;
+	double accumulator = 0.0;
 
 	static Engine *instance;
 

@@ -44,6 +44,8 @@ bool Engine::init()
 
 	assets = std::make_unique<AssetManager>();
 
+	camera = std::make_unique<Camera>();
+
 	renderer = std::make_unique<Renderer>();
 	renderer->init();
 
@@ -53,6 +55,7 @@ bool Engine::init()
 void Engine::shutdown()
 {
 	renderer.reset();
+	camera.reset();
 	assets.reset();
 	input.reset();
 

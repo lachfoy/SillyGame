@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "Engine.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -76,8 +77,7 @@ bool Renderer::init()
 	projection =
 		glm::perspective(glm::radians(90.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
-	view =
-		glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
+	view = Engine::instance->camera->getViewMatrix();
 
 	return true;
 }
@@ -122,7 +122,7 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 					   GL_FALSE, glm::value_ptr(model));
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE,
-					   glm::value_ptr(view));
+		glm::value_ptr(Engine::instance->camera->getViewMatrix()));
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1,
 					   GL_FALSE, glm::value_ptr(projection));
