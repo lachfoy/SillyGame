@@ -104,19 +104,16 @@ bool Renderer::init()
 void Renderer::shutdown()
 {
 	if (vbo != 0)
-	{
 		glDeleteBuffers(1, &vbo);
-	}
 
 	if (vao != 0)
-	{
 		glDeleteVertexArrays(1, &vao);
-	}
 
 	if (shaderProgram != 0)
-	{
 		glDeleteProgram(shaderProgram);
-	}
+
+	if (ubo != 0)
+		glDeleteBuffers(1, &ubo);
 }
 
 void Renderer::beginFrame()
