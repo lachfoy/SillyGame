@@ -136,16 +136,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\glad\src\glad.c" />
-    <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="Input.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="src\engine\Engine.cpp" />
+    <ClCompile Include="src\engine\Input.cpp" />
+    <ClCompile Include="src\engine\main.cpp" />
+    <ClCompile Include="src\engine\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine.h" />
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="AssetManager.h" />
-    <ClInclude Include="Renderer.h" />
+    <ClInclude Include="src\engine\AssetManager.h" />
+    <ClInclude Include="src\engine\Engine.h" />
+    <ClInclude Include="src\engine\Input.h" />
+    <ClInclude Include="src\engine\Renderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
