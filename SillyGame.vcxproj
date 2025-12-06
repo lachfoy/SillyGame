@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\dev\stb;C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\dev\stb;C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -143,7 +143,6 @@
     <ClCompile Include="src\engine\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\engine\AssetManager.h" />
     <ClInclude Include="src\engine\Camera.h" />
     <ClInclude Include="src\engine\Engine.h" />
     <ClInclude Include="src\engine\Input.h" />

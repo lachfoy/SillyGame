@@ -1,4 +1,5 @@
 #include "Engine.h"
+
 #include <glad/glad.h>
 #include <iostream>
 
@@ -42,8 +43,6 @@ bool Engine::init()
 
 	input = std::make_unique<Input>();
 
-	assets = std::make_unique<AssetManager>();
-
 	camera = std::make_unique<Camera>();
 
 	renderer = std::make_unique<Renderer>();
@@ -54,9 +53,10 @@ bool Engine::init()
 
 void Engine::shutdown()
 {
+	renderer->shutdown();
 	renderer.reset();
+
 	camera.reset();
-	assets.reset();
 	input.reset();
 
 	if (glContext)

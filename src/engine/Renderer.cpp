@@ -1,8 +1,13 @@
 #include "Renderer.h"
 #include "Engine.h"
 
+#include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
+#include <stb_image.h>
 
 bool Renderer::init()
 {
@@ -103,17 +108,80 @@ bool Renderer::init()
 
 void Renderer::shutdown()
 {
+	for (auto &tex : textures)
+	{
+		if (tex.id != 0)
+		{
+			glDeleteTextures(1, &tex.id);
+			tex.id = 0;
+		}
+	}
+	textures.clear();
+
 	if (vbo != 0)
+	{
 		glDeleteBuffers(1, &vbo);
+		vbo = 0;
+	}
 
 	if (vao != 0)
+	{
 		glDeleteVertexArrays(1, &vao);
+		vao = 0;
+	}
 
 	if (shaderProgram != 0)
+	{
 		glDeleteProgram(shaderProgram);
+		shaderProgram = 0;
+	}
 
 	if (ubo != 0)
+	{
 		glDeleteBuffers(1, &ubo);
+		ubo = 0;
+	}
+}
+
+unsigned int Renderer::loadTexture(const char *path)
+{
+	int w, h, channels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char *data = stbi_load(path, &w, &h, &channels, 4);
+
+	if (!data)
+	{
+		std::cerr << "Failed to load: " << path << std::endl;
+		return -1;
+	}
+
+	GLuint texID;
+	glGenTextures(1, &texID);
+	glBindTexture(GL_TEXTURE_2D, texID);
+
+	// Upload
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				 data);
+
+	// Sampler parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	stbi_image_free(data);
+
+	Texture tex;
+	tex.id = texID;
+	tex.width = w;
+	tex.height = h;
+
+	// Might just use a unordered map instead here
+	unsigned int handle = (unsigned int)textures.size();
+	textures.push_back(tex);
+
+	return handle;
 }
 
 void Renderer::beginFrame()
@@ -133,6 +201,12 @@ void Renderer::beginFrame()
 void Renderer::endFrame()
 {
 	// stub
+}
+
+void Renderer::clear(float r, float g, float b)
+{
+	glClearColor(r, g, b, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,

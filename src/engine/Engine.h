@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "Input.h"
-#include "AssetManager.h"
 #include "Renderer.h"
 #include "Camera.h"
 
@@ -14,7 +13,6 @@ struct Engine
 	SDL_GLContext glContext = nullptr;
 
 	std::unique_ptr<Input> input;
-	std::unique_ptr<AssetManager> assets;
 	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;
 
