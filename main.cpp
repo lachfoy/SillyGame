@@ -25,7 +25,8 @@ int main(int argc, char *argv[])
 		}
 
 		engine.renderer->clear(0.2f, 0.3f, 0.6f);
-		engine.renderer->draw();
+		engine.renderer->drawQuad(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0),
+								  glm::vec3(1, 1, 1), glm::vec4(1, 1, 1, 1));
 
 		SDL_GL_SwapWindow(engine.window);
 	}

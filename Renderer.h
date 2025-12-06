@@ -15,7 +15,8 @@ class Renderer
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
 
-	void draw();
+	void drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
+				  glm::vec4 color) const;
 
   private:
 	GLuint shaderProgram = 0;

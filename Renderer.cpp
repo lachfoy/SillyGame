@@ -14,17 +14,25 @@ bool Renderer::init()
         uniform mat4 view;
         uniform mat4 projection;
 
-        void main() {
+        out vec4 fragColor;
+
+        uniform vec4 uColor;
+
+        void main()
+        {
+            fragColor = uColor;
             gl_Position = projection * view * model * vec4(aPos, 1.0);
         }
     )";
 
 	const char *fs = R"(
         #version 460 core
+        in vec4 fragColor;
         out vec4 FragColor;
 
-        void main() {
-            FragColor = vec4(1, 1, 1, 1);
+        void main()
+        {
+            FragColor = fragColor;
         }
     )";
 
@@ -66,7 +74,7 @@ bool Renderer::init()
 
 	// --- Matrices --------------------------------------------------------
 	projection =
-		glm::perspective(glm::radians(70.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+		glm::perspective(glm::radians(90.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
 	view =
 		glm::lookAt(glm::vec3(0, 0, 2), glm::vec3(0, 0, 0), glm::vec3(0, 1, 0));
@@ -92,11 +100,23 @@ void Renderer::shutdown()
 	}
 }
 
-void Renderer::draw()
+void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
+						glm::vec4 color) const
 {
 	glUseProgram(shaderProgram);
 
 	glm::mat4 model = glm::mat4(1.0f);
+
+	// Translate
+	model = glm::translate(model, position);
+
+	// Rotate xyz
+	model = glm::rotate(model, glm::radians(rotation.x), {1, 0, 0});
+	model = glm::rotate(model, glm::radians(rotation.y), {0, 1, 0});
+	model = glm::rotate(model, glm::radians(rotation.z), {0, 0, 1});
+
+	// Scale
+	model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1,
 					   GL_FALSE, glm::value_ptr(model));
@@ -106,6 +126,9 @@ void Renderer::draw()
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1,
 					   GL_FALSE, glm::value_ptr(projection));
+
+	glUniform4fv(glGetUniformLocation(shaderProgram, "uColor"), 1,
+				 glm::value_ptr(color));
 
 	glBindVertexArray(vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
