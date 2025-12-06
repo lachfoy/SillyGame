@@ -20,9 +20,7 @@ int main(int argc, char *argv[])
 		double frameTime = now - lastTime;
 		lastTime = now;
 
-		if (frameTime > 0.25)
-			frameTime = 0.25;
-
+		frameTime = std::min(frameTime, 0.25);
 		accumulator += frameTime;
 
 		// --- Handle inputs ---------------------------------------------------
@@ -39,7 +37,7 @@ int main(int argc, char *argv[])
 		// --- Handle updates --------------------------------------------------
 		while (accumulator >= engine.fixedDelta)
 		{
-			engine.camera->update(static_cast<float>(engine.fixedDelta));
+			engine.camera->update((float)engine.fixedDelta);
 			accumulator -= engine.fixedDelta;
 		}
 
