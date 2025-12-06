@@ -2,9 +2,6 @@
 #include <SDL3/SDL.h>
 #include <iostream>
 
-glm::vec3 position = {};
-glm::vec3 velocity = {};
-
 int main(int argc, char *argv[])
 {
 	Engine engine;
@@ -39,27 +36,22 @@ int main(int argc, char *argv[])
 			engine.input->handleEvent(e);
 		}
 
+		// --- Handle updates --------------------------------------------------
 		while (accumulator >= engine.fixedDelta)
 		{
-			engine.camera->update(engine.fixedDelta);
+			engine.camera->update(static_cast<float>(engine.fixedDelta));
 			accumulator -= engine.fixedDelta;
 		}
 
-		/*velocity = glm::vec3(0.f);
-		if (engine.input->isDown(SDLK_W))
-			velocity.y = 1;
-		if (engine.input->isDown(SDLK_A))
-			velocity.x = -1;
-		if (engine.input->isDown(SDLK_S))
-			velocity.y = -1;
-		if (engine.input->isDown(SDLK_D))
-			velocity.x = 1;
-		glm::normalize(velocity);
-		position += velocity * 0.05f;*/
+		// --- Rendering -------------------------------------------------------
+		engine.renderer->beginFrame();
 
 		engine.renderer->clear(0.2f, 0.3f, 0.6f);
-		engine.renderer->drawQuad(position, glm::vec3(0, 0, 0),
+
+		engine.renderer->drawQuad(glm::vec3(0, 0, 0), glm::vec3(0, 0, 0),
 								  glm::vec3(1, 1, 1), glm::vec4(1, 1, 1, 1));
+
+		engine.renderer->endFrame();
 
 		SDL_GL_SwapWindow(engine.window);
 	}

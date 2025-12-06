@@ -6,23 +6,38 @@
 
 bool Renderer::init()
 {
+	// --- Camera UBO -----------------------------------------------------
+	glGenBuffers(1, &ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr,
+				 GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// Bind the UBO to binding point 0
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
+
 	// --- Shader ---------------------------------------------------------
 	const char *vs = R"(
         #version 460 core
         layout (location = 0) in vec3 aPos;
 
+		layout(std140) uniform Camera
+		{
+			mat4 uView;
+			mat4 uProj;
+			vec3 uCameraPos;
+			float _pad0;
+		};
+
         uniform mat4 model;
-        uniform mat4 view;
-        uniform mat4 projection;
+        uniform vec4 uColor;
 
         out vec4 fragColor;
-
-        uniform vec4 uColor;
 
         void main()
         {
             fragColor = uColor;
-            gl_Position = projection * view * model * vec4(aPos, 1.0);
+            gl_Position = uProj * uView * model * vec4(aPos, 1.0);
         }
     )";
 
@@ -52,6 +67,10 @@ bool Renderer::init()
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
+
+	// Set camera UBO
+	GLuint index = glGetUniformBlockIndex(shaderProgram, "Camera");
+	glUniformBlockBinding(shaderProgram, index, 0);
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
@@ -100,6 +119,25 @@ void Renderer::shutdown()
 	}
 }
 
+void Renderer::beginFrame()
+{
+	// Update UBO
+	CameraData data;
+	data.view = Engine::instance->camera->getViewMatrix();
+	data.proj = projection; // Right now the camera doesn't decide projection.
+							// But this will probably change.
+	data.cameraPos = Engine::instance->camera->position;
+
+	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void Renderer::endFrame()
+{
+	// stub
+}
+
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 						glm::vec4 color) const
 {
@@ -120,12 +158,6 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1,
 					   GL_FALSE, glm::value_ptr(model));
-
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE,
-		glm::value_ptr(Engine::instance->camera->getViewMatrix()));
-
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1,
-					   GL_FALSE, glm::value_ptr(projection));
 
 	glUniform4fv(glGetUniformLocation(shaderProgram, "uColor"), 1,
 				 glm::value_ptr(color));
