@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 		while (SDL_PollEvent(&e))
 		{
 #ifdef WITH_EDITOR
-			ImGui_ImplSDL3_ProcessEvent(&e);
+			engine.editor->processEvent(e);
 #endif
 
 			if (e.type == SDL_EVENT_QUIT)
@@ -42,55 +42,31 @@ int main(int argc, char *argv[])
 		// --- Handle updates --------------------------------------------------
 		while (accumulator >= engine.fixedDelta)
 		{
-#ifdef WITH_EDITOR
-			if (engine.input->pressed(SDLK_TAB))
-				engine.editorMode = !engine.editorMode;
-#endif
+			if (engine.mode == 0)// Game mode
+			{
+				engine.world->update((float)engine.fixedDelta);
+			}
 
 			engine.camera->update((float)engine.fixedDelta);
-
-#ifdef WITH_EDITOR
-			if (engine.editorMode)
-			{
-			}
-			else
-#endif
-				engine.world->update((float)engine.fixedDelta);
 
 			accumulator -= engine.fixedDelta;
 		}
 
 		// --- Rendering -------------------------------------------------------
-#ifdef WITH_EDITOR
-		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL3_NewFrame();
-		ImGui::NewFrame();
-#endif
-
 		engine.renderer->beginFrame();
 		engine.renderer->clear(0.2f, 0.3f, 0.6f);
 
 		engine.world->render();
 
-		engine.renderer->endFrame();
-
-		ImGui::Begin("Another Window");
-		ImGui::Text("Hello from another window!");
-		ImGui::End();
-
 #ifdef WITH_EDITOR
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		engine.editor->beginFrame();
+		engine.editor->draw();
+		engine.editor->endFrame();
 #endif
 
+		engine.renderer->endFrame();
 		SDL_GL_SwapWindow(engine.window);
 	}
-
-#ifdef WITH_EDITOR
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplSDL3_Shutdown();
-	ImGui::DestroyContext();
-#endif
 
 	engine.shutdown();
 

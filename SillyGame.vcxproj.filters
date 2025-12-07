@@ -29,6 +29,9 @@
     <ClCompile Include="..\imgui-1.92.5\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\imgui-1.92.5\backends\imgui_impl_sdl3.cpp" />
     <ClCompile Include="..\imgui-1.92.5\imgui_tables.cpp" />
+    <ClCompile Include="src\engine\Editor.cpp">
+      <Filter>src\engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -59,6 +62,9 @@
     </ClInclude>
     <ClInclude Include="src\game\Player.h">
       <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\Editor.h">
+      <Filter>src\engine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

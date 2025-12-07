@@ -5,19 +5,20 @@
 
 #include "../game/World.h"
 #include "Camera.h"
+#include "Editor.h"
 #include "Input.h"
 #include "Renderer.h"
 
 #define WITH_EDITOR 1
 
-#ifdef WITH_EDITOR
-#include <imgui.h>
-#include <imgui_impl_opengl3.h>
-#include <imgui_impl_sdl3.h>
-#endif
-
 struct Engine
 {
+	Engine() { instance = this; }
+	~Engine() { instance = nullptr; }
+
+	bool init();
+	void shutdown();
+
 	SDL_Window *window = nullptr;
 	SDL_GLContext glContext = nullptr;
 
@@ -27,17 +28,12 @@ struct Engine
 	std::unique_ptr<World> world;
 
 #ifdef WITH_EDITOR
-	bool editorMode = false;
+	std::unique_ptr<Editor> editor;
 #endif
+	int mode = 0;
 
 	double fixedDelta = 1.0 / 60.0;
 	double accumulator = 0.0;
 
 	static Engine *instance;
-
-	Engine() { instance = this; }
-	~Engine() { instance = nullptr; }
-
-	bool init();
-	void shutdown();
 };

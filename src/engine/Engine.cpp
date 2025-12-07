@@ -41,17 +41,10 @@ bool Engine::init()
 
 	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
-	// imgui?
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO &io = ImGui::GetIO();
-	io.ConfigFlags |=
-		ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-
-	ImGui::StyleColorsDark();
-
-	ImGui_ImplSDL3_InitForOpenGL(window, glContext);
-	ImGui_ImplOpenGL3_Init("#version 460");
+#ifdef WITH_EDITOR
+	editor = std::make_unique<Editor>();
+	editor->init(window, glContext);
+#endif
 
 	input = std::make_unique<Input>();
 
@@ -74,6 +67,11 @@ void Engine::shutdown()
 
 	camera.reset();
 	input.reset();
+
+#ifdef WITH_EDITOR
+	editor->shutdown();
+	editor.reset();
+#endif
 
 	if (glContext)
 	{

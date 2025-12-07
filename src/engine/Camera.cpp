@@ -5,7 +5,7 @@
 void Camera::update(float dt)
 {
 #ifdef WITH_EDITOR
-	if (!Engine::instance->editorMode)
+	if (Engine::instance->mode == 0)
 		return;
 
 	// ----- Movement -----
