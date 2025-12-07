@@ -41,6 +41,18 @@ bool Engine::init()
 
 	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
+	// imgui?
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO &io = ImGui::GetIO();
+	io.ConfigFlags |=
+		ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+
+	ImGui::StyleColorsDark();
+
+	ImGui_ImplSDL3_InitForOpenGL(window, glContext);
+	ImGui_ImplOpenGL3_Init("#version 460");
+
 	input = std::make_unique<Input>();
 
 	camera = std::make_unique<Camera>();

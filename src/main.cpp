@@ -29,6 +29,10 @@ int main(int argc, char *argv[])
 
 		while (SDL_PollEvent(&e))
 		{
+#ifdef WITH_EDITOR
+			ImGui_ImplSDL3_ProcessEvent(&e);
+#endif
+
 			if (e.type == SDL_EVENT_QUIT)
 				running = false;
 
@@ -57,6 +61,12 @@ int main(int argc, char *argv[])
 		}
 
 		// --- Rendering -------------------------------------------------------
+#ifdef WITH_EDITOR
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
+		ImGui::NewFrame();
+#endif
+
 		engine.renderer->beginFrame();
 		engine.renderer->clear(0.2f, 0.3f, 0.6f);
 
@@ -64,8 +74,23 @@ int main(int argc, char *argv[])
 
 		engine.renderer->endFrame();
 
+		ImGui::Begin("Another Window");
+		ImGui::Text("Hello from another window!");
+		ImGui::End();
+
+#ifdef WITH_EDITOR
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
+
 		SDL_GL_SwapWindow(engine.window);
 	}
+
+#ifdef WITH_EDITOR
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
+	ImGui::DestroyContext();
+#endif
 
 	engine.shutdown();
 

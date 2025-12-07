@@ -23,6 +23,12 @@
     <ClCompile Include="src\game\Player.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="..\imgui-1.92.5\imgui.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui_draw.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui_widgets.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\backends\imgui_impl_sdl3.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui_tables.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">

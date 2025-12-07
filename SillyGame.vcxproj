@@ -104,7 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\dev\stb;C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\dev\stb;C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include;C:\dev\imgui-1.92.5\backends;C:\dev\imgui-1.92.5</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -122,7 +122,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\dev\stb;C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\dev\stb;C:\dev\glm;C:\dev\SDL3-3.2.16\include;C:\dev\glad\include;C:\dev\imgui-1.92.5\backends;C:\dev\imgui-1.92.5</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -135,7 +135,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\glad\src\glad.c" />
+    <ClCompile Include="..\glad\src\glad.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\dev\imgui-1.92.5;C:\dev\imgui-1.92.5\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\dev\imgui-1.92.5;C:\dev\imgui-1.92.5\backends;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <ClCompile Include="..\imgui-1.92.5\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\backends\imgui_impl_sdl3.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui_draw.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui_tables.cpp" />
+    <ClCompile Include="..\imgui-1.92.5\imgui_widgets.cpp" />
     <ClCompile Include="src\engine\Camera.cpp" />
     <ClCompile Include="src\engine\Engine.cpp" />
     <ClCompile Include="src\engine\Input.cpp" />
