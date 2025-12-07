@@ -20,6 +20,9 @@
     <ClCompile Include="src\game\World.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="src\game\Player.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -46,6 +49,9 @@
       <Filter>src\engine</Filter>
     </ClInclude>
     <ClInclude Include="src\game\World.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\Player.h">
       <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>
