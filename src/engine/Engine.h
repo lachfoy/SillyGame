@@ -3,10 +3,12 @@
 #include <SDL3/SDL.h>
 #include <memory>
 
+#include "../game/World.h"
+#include "Camera.h"
 #include "Input.h"
 #include "Renderer.h"
-#include "Camera.h"
-#include "../game/World.h"
+
+#define WITH_EDITOR 1
 
 struct Engine
 {
@@ -18,7 +20,9 @@ struct Engine
 	std::unique_ptr<Renderer> renderer;
 	std::unique_ptr<World> world;
 
-	bool debugCameraEnabled = true;
+#ifdef WITH_EDITOR
+	bool editorMode = false;
+#endif
 
 	double fixedDelta = 1.0 / 60.0;
 	double accumulator = 0.0;

@@ -4,6 +4,10 @@
 
 void Camera::update(float dt)
 {
+#ifdef WITH_EDITOR
+	if (!Engine::instance->editorMode)
+		return;
+
 	// ----- Movement -----
 	glm::vec3 forward;
 	forward.x = sin(glm::radians(rotation.y));
@@ -42,4 +46,5 @@ void Camera::update(float dt)
 		rotation.x = 89.f;
 	if (rotation.x < -89.f)
 		rotation.x = -89.f;
+#endif
 }

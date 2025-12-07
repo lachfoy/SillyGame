@@ -38,8 +38,20 @@ int main(int argc, char *argv[])
 		// --- Handle updates --------------------------------------------------
 		while (accumulator >= engine.fixedDelta)
 		{
+#ifdef WITH_EDITOR
+			if (engine.input->pressed(SDLK_TAB))
+				engine.editorMode = !engine.editorMode;
+#endif
+
 			engine.camera->update((float)engine.fixedDelta);
-			engine.world->update((float)engine.fixedDelta);
+
+#ifdef WITH_EDITOR
+			if (engine.editorMode)
+			{
+			}
+			else
+#endif
+				engine.world->update((float)engine.fixedDelta);
 
 			accumulator -= engine.fixedDelta;
 		}
