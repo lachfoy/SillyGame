@@ -48,11 +48,15 @@ bool Engine::init()
 	renderer = std::make_unique<Renderer>();
 	renderer->init();
 
+	world = std::make_unique<World>();
+
 	return true;
 }
 
 void Engine::shutdown()
 {
+	world.reset();
+
 	renderer->shutdown();
 	renderer.reset();
 

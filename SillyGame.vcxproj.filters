@@ -7,15 +7,18 @@
     <ClCompile Include="src\engine\Input.cpp">
       <Filter>src\engine</Filter>
     </ClCompile>
-    <ClCompile Include="src\engine\main.cpp">
-      <Filter>src\engine</Filter>
-    </ClCompile>
     <ClCompile Include="src\engine\Renderer.cpp">
       <Filter>src\engine</Filter>
     </ClCompile>
     <ClCompile Include="..\glad\src\glad.c" />
     <ClCompile Include="src\engine\Camera.cpp">
       <Filter>src\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\game\World.cpp">
+      <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -41,6 +44,9 @@
     </ClInclude>
     <ClInclude Include="src\engine\Camera.h">
       <Filter>src\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\World.h">
+      <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

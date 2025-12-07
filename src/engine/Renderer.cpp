@@ -6,8 +6,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <iostream>
 #include <stb_image.h>
+
+#include <iostream>
 
 bool Renderer::init()
 {
@@ -99,7 +100,7 @@ bool Renderer::init()
 
 	// --- Matrices --------------------------------------------------------
 	projection =
-		glm::perspective(glm::radians(90.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+		glm::perspective(glm::radians(50.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
 	view = Engine::instance->camera->getViewMatrix();
 

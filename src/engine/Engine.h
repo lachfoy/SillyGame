@@ -6,6 +6,7 @@
 #include "Input.h"
 #include "Renderer.h"
 #include "Camera.h"
+#include "../game/World.h"
 
 struct Engine
 {
@@ -15,6 +16,7 @@ struct Engine
 	std::unique_ptr<Input> input;
 	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;
+	std::unique_ptr<World> world;
 
 	bool debugCameraEnabled = true;
 
