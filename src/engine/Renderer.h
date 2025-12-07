@@ -40,8 +40,8 @@ class Renderer
 	unsigned int vbo = 0;
 	unsigned int ubo = 0; // Camera ubo
 
-	glm::mat4 projection;
-	glm::mat4 view;
+	glm::mat4 projection{};
+	glm::mat4 view{};
 
 	std::vector<Texture> textures;
 };

@@ -5,8 +5,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#pragma warning(push)
+#pragma warning(disable : 26451)
+#pragma warning(disable : 26819)
+#pragma warning(disable : 6262)
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#pragma warning(pop)
 
 #include <iostream>
 
@@ -103,6 +108,8 @@ bool Renderer::init()
 		glm::perspective(glm::radians(50.0f), 800.0f / 600.0f, 0.1f, 100.0f);
 
 	view = Engine::instance->camera->getViewMatrix();
+
+	glEnable(GL_DEPTH_TEST);
 
 	return true;
 }
