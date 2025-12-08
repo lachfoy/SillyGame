@@ -1,7 +1,15 @@
 #pragma once
 
+#include <cstdint>
 #include <glm/glm.hpp>
-#include <vector>
+#include <unordered_map>
+
+struct Texture
+{
+	uint32_t id = 0;
+	int width = 0;
+	int height = 0;
+};
 
 class Renderer
 {
@@ -9,7 +17,8 @@ class Renderer
 	bool init();
 	void shutdown();
 
-	unsigned int loadTexture(const char *path);
+	Texture loadTexture(const char *path);
+	void destroyTexture(Texture texture);
 
 	void beginFrame();
 	void endFrame();
@@ -20,7 +29,7 @@ class Renderer
 				  glm::vec4 color) const;
 
   private:
-	unsigned int ubo = 0; // Camera ubo
+	uint32_t ubo = 0; // Camera ubo
 
 	struct CameraData
 	{
@@ -30,18 +39,7 @@ class Renderer
 		float _pad0 = 0.0f; // std140 padding
 	};
 
-	glm::mat4 projection{};
-
-	unsigned int shaderProgram = 0;
-	unsigned int vao = 0;
-	unsigned int vbo = 0;
-
-	struct Texture
-	{
-		unsigned int id = 0;
-		int width = 0;
-		int height = 0;
-	};
-
-	std::vector<Texture> textures;
+	uint32_t shaderProgram = 0;
+	uint32_t vao = 0;
+	uint32_t vbo = 0;
 };

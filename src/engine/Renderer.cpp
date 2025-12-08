@@ -111,16 +111,6 @@ bool Renderer::init()
 
 void Renderer::shutdown()
 {
-	for (auto &tex : textures)
-	{
-		if (tex.id != 0)
-		{
-			glDeleteTextures(1, &tex.id);
-			tex.id = 0;
-		}
-	}
-	textures.clear();
-
 	if (vbo != 0)
 	{
 		glDeleteBuffers(1, &vbo);
@@ -146,7 +136,7 @@ void Renderer::shutdown()
 	}
 }
 
-unsigned int Renderer::loadTexture(const char *path)
+Texture Renderer::loadTexture(const char *path)
 {
 	int w, h, channels;
 	stbi_set_flip_vertically_on_load(true);
@@ -155,12 +145,12 @@ unsigned int Renderer::loadTexture(const char *path)
 	if (!data)
 	{
 		std::cerr << "Failed to load: " << path << std::endl;
-		return -1;
+		return {};
 	}
 
-	GLuint texID;
-	glGenTextures(1, &texID);
-	glBindTexture(GL_TEXTURE_2D, texID);
+	GLuint glId;
+	glGenTextures(1, &glId);
+	glBindTexture(GL_TEXTURE_2D, glId);
 
 	// Upload
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -175,16 +165,13 @@ unsigned int Renderer::loadTexture(const char *path)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);
 
-	Texture tex;
-	tex.id = texID;
-	tex.width = w;
-	tex.height = h;
+	return {static_cast<uint32_t>(glId), w, h};
+}
 
-	// Might just use a unordered map instead here
-	unsigned int handle = (unsigned int)textures.size();
-	textures.push_back(tex);
-
-	return handle;
+void Renderer::destroyTexture(Texture texture)
+{
+	auto glId = static_cast<GLuint>(texture.id);
+	glDeleteTextures(1, &glId);
 }
 
 void Renderer::beginFrame()

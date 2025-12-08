@@ -56,12 +56,14 @@ bool Engine::init()
 	renderer->init();
 
 	world = std::make_unique<World>();
+	world->init();
 
 	return true;
 }
 
 void Engine::shutdown()
 {
+	world->shutdown();
 	world.reset();
 
 	renderer->shutdown();

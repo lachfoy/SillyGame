@@ -1,13 +1,17 @@
 #pragma once
 
 #include "Player.h"
+#include <memory>
 
 class World
 {
   public:
+	void init();
+	void shutdown();
+
 	void update(float dt);
 	void render();
 
   private:
-	Player player;
+	std::unique_ptr<Player> player;
 };

@@ -2,7 +2,11 @@
 
 #include "../engine/Engine.h"
 
-void World::update(float dt) { player.update(dt); }
+void World::init() { player = std::make_unique<Player>(); }
+
+void World::shutdown() { player.reset(); }
+
+void World::update(float dt) { player->update(dt); }
 
 void World::render()
 {
@@ -13,6 +17,6 @@ void World::render()
 
 	// Player
 	Engine::instance->renderer->drawQuad(
-		player.position + glm::vec3(0, 0.5f, 0), glm::vec3(0, 0, 0),
+		player->position + glm::vec3(0, 0.5f, 0), glm::vec3(0, 0, 0),
 		glm::vec3(1, 1, 1), glm::vec4(1, 1, 1, 1));
 }
