@@ -22,8 +22,6 @@ struct Engine
 	SDL_Window *window = nullptr;
 	SDL_GLContext glContext = nullptr;
 
-	SDL_Gamepad *gamepad = nullptr;
-
 	std::unique_ptr<Input> input;
 	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;

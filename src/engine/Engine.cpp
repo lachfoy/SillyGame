@@ -27,18 +27,6 @@ bool Engine::init()
 		return false;
 	}
 
-	int count;
-	SDL_JoystickID *joystickIds = SDL_GetGamepads(&count);
-	for (size_t i = 0; i < count; ++i)
-	{
-		gamepad = SDL_OpenGamepad(joystickIds[i]);
-		if (gamepad)
-		{
-			std::cout << "Opened " << SDL_GetGamepadName(gamepad) << std::endl;
-			break;
-		}
-	}
-
 	glContext = SDL_GL_CreateContext(window);
 	if (!glContext)
 	{
@@ -91,12 +79,6 @@ void Engine::shutdown()
 	{
 		SDL_GL_DestroyContext(glContext);
 		glContext = nullptr;
-	}
-
-	if (gamepad)
-	{
-		SDL_CloseGamepad(gamepad);
-		gamepad = nullptr;
 	}
 
 	if (window)
