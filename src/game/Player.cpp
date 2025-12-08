@@ -1,6 +1,9 @@
 #include "Player.h"
 
 #include "../engine/Engine.h"
+#include <imgui.h>
+
+#include <iostream>
 
 void Player::update(float dt)
 {
@@ -19,6 +22,9 @@ void Player::update(float dt)
 	if (Engine::instance->input->isDown(SDLK_D))
 		moveX += 1.f;
 
+	moveZ += Engine::instance->input->axis(SDL_GAMEPAD_AXIS_LEFTY);
+	moveX += Engine::instance->input->axis(SDL_GAMEPAD_AXIS_LEFTX);
+
 	// Normalize 2D movement
 	float len = std::sqrt(moveX * moveX + moveZ * moveZ);
 	if (len > 0.f)
@@ -31,7 +37,8 @@ void Player::update(float dt)
 	position.z += moveZ * moveSpeed * dt;
 
 	// ==== Jumping ====
-	bool spaceDown = Engine::instance->input->isDown(SDLK_SPACE);
+	bool spaceDown = Engine::instance->input->isDown(SDLK_SPACE) ||
+					 Engine::instance->input->isDown(SDL_GAMEPAD_BUTTON_SOUTH);
 
 	// Jump when space goes from up to down AND player is grounded
 	if (spaceDown && !spaceWasDown && isGrounded)

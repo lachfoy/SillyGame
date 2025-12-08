@@ -16,7 +16,30 @@ class Input
 		return framePressed.find(key) != framePressed.end();
 	}
 
+	bool isDown(SDL_GamepadButton button) const
+	{
+		return gamepad.held.count(button);
+	}
+	bool pressed(SDL_GamepadButton button) const
+	{
+		return gamepad.framePressed.count(button);
+	}
+
+	float axis(SDL_GamepadAxis axis) const
+	{
+		return applyDeadzone(gamepad.axes[axis]);
+	}
+
   private:
+	static float applyDeadzone(float value);
+
 	std::unordered_set<SDL_Keycode> held;
 	std::unordered_set<SDL_Keycode> framePressed;
+
+	struct
+	{
+		std::unordered_set<SDL_GamepadButton> held;
+		std::unordered_set<SDL_GamepadButton> framePressed;
+		float axes[SDL_GAMEPAD_AXIS_COUNT]{};
+	} gamepad;
 };

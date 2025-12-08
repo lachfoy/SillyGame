@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
 		// --- Handle updates --------------------------------------------------
 		while (accumulator >= engine.fixedDelta)
 		{
-			if (engine.mode == 0)// Game mode
+			if (engine.mode == 0) // Game mode
 			{
 				engine.world->update((float)engine.fixedDelta);
 			}

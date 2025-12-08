@@ -3,11 +3,13 @@
 #include <glad/glad.h>
 #include <iostream>
 
+#include <SDL3/SDL_gamepad.h>
+
 Engine *Engine::instance = nullptr;
 
 bool Engine::init()
 {
-	if (!SDL_Init(SDL_INIT_VIDEO))
+	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
 	{
 		std::cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
 		return false;
@@ -23,6 +25,18 @@ bool Engine::init()
 	{
 		std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
 		return false;
+	}
+
+	int count;
+	SDL_JoystickID *joystickIds = SDL_GetGamepads(&count);
+	for (size_t i = 0; i < count; ++i)
+	{
+		gamepad = SDL_OpenGamepad(joystickIds[i]);
+		if (gamepad)
+		{
+			std::cout << "Opened " << SDL_GetGamepadName(gamepad) << std::endl;
+			break;
+		}
 	}
 
 	glContext = SDL_GL_CreateContext(window);
@@ -77,6 +91,12 @@ void Engine::shutdown()
 	{
 		SDL_GL_DestroyContext(glContext);
 		glContext = nullptr;
+	}
+
+	if (gamepad)
+	{
+		SDL_CloseGamepad(gamepad);
+		gamepad = nullptr;
 	}
 
 	if (window)
