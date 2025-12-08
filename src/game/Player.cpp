@@ -1,9 +1,6 @@
 #include "Player.h"
 
 #include "../engine/Engine.h"
-#include <imgui.h>
-
-#include <iostream>
 
 void Player::update(float dt)
 {
