@@ -103,12 +103,7 @@ bool Renderer::init()
 
 	glBindVertexArray(0);
 
-	// --- Matrices --------------------------------------------------------
-	projection =
-		glm::perspective(glm::radians(50.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-
-	view = Engine::instance->camera->getViewMatrix();
-
+	// --- GL State --------------------------------------------------------
 	glEnable(GL_DEPTH_TEST);
 
 	return true;
@@ -197,8 +192,9 @@ void Renderer::beginFrame()
 	// Update UBO
 	CameraData data;
 	data.view = Engine::instance->camera->getViewMatrix();
-	data.proj = projection; // Right now the camera doesn't decide projection.
-							// But this will probably change.
+	data.proj = glm::perspective(
+		glm::radians(50.0f), 800.0f / 600.0f, 0.1f,
+		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo);

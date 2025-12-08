@@ -20,12 +20,7 @@ class Renderer
 				  glm::vec4 color) const;
 
   private:
-	struct Texture
-	{
-		unsigned int id = 0;
-		int width = 0;
-		int height = 0;
-	};
+	unsigned int ubo = 0; // Camera ubo
 
 	struct CameraData
 	{
@@ -35,13 +30,18 @@ class Renderer
 		float _pad0 = 0.0f; // std140 padding
 	};
 
+	glm::mat4 projection{};
+
 	unsigned int shaderProgram = 0;
 	unsigned int vao = 0;
 	unsigned int vbo = 0;
-	unsigned int ubo = 0; // Camera ubo
 
-	glm::mat4 projection{};
-	glm::mat4 view{};
+	struct Texture
+	{
+		unsigned int id = 0;
+		int width = 0;
+		int height = 0;
+	};
 
 	std::vector<Texture> textures;
 };
