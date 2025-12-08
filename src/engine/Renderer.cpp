@@ -30,21 +30,21 @@ struct RenderData
 	GLuint vbo = 0;
 };
 
-Renderer::Renderer() { data = new RenderData(); }
+Renderer::Renderer() { mRenderData = new RenderData(); }
 
-Renderer::~Renderer() { delete data; }
+Renderer::~Renderer() { delete mRenderData; }
 
 bool Renderer::init()
 {
 	// --- Camera UBO -----------------------------------------------------
-	glGenBuffers(1, &data->ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, data->ubo);
+	glGenBuffers(1, &mRenderData->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRenderData->ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr,
 				 GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Bind the UBO to binding point 0
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, data->ubo);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRenderData->ubo);
 
 	// --- Shader ---------------------------------------------------------
 	const char *vs = R"(
@@ -90,17 +90,17 @@ bool Renderer::init()
 	glShaderSource(fragment, 1, &fs, nullptr);
 	glCompileShader(fragment);
 
-	data->shaderProgram = glCreateProgram();
-	glAttachShader(data->shaderProgram, vertex);
-	glAttachShader(data->shaderProgram, fragment);
-	glLinkProgram(data->shaderProgram);
+	mRenderData->shaderProgram = glCreateProgram();
+	glAttachShader(mRenderData->shaderProgram, vertex);
+	glAttachShader(mRenderData->shaderProgram, fragment);
+	glLinkProgram(mRenderData->shaderProgram);
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 
 	// Set camera UBO
-	GLuint index = glGetUniformBlockIndex(data->shaderProgram, "Camera");
-	glUniformBlockBinding(data->shaderProgram, index, 0);
+	GLuint index = glGetUniformBlockIndex(mRenderData->shaderProgram, "Camera");
+	glUniformBlockBinding(mRenderData->shaderProgram, index, 0);
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
@@ -108,11 +108,11 @@ bool Renderer::init()
 		-0.5f, -0.5f, 0.0f, 0.5f, 0.5f,	 0.0f, -0.5f, 0.5f, 0.0f,
 	};
 
-	glGenVertexArrays(1, &data->vao);
-	glGenBuffers(1, &data->vbo);
+	glGenVertexArrays(1, &mRenderData->vao);
+	glGenBuffers(1, &mRenderData->vbo);
 
-	glBindVertexArray(data->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
+	glBindVertexArray(mRenderData->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, mRenderData->vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
 				 GL_STATIC_DRAW);
 
@@ -130,28 +130,28 @@ bool Renderer::init()
 
 void Renderer::shutdown()
 {
-	if (data->vbo != 0)
+	if (mRenderData->vbo != 0)
 	{
-		glDeleteBuffers(1, &data->vbo);
-		data->vbo = 0;
+		glDeleteBuffers(1, &mRenderData->vbo);
+		mRenderData->vbo = 0;
 	}
 
-	if (data->vao != 0)
+	if (mRenderData->vao != 0)
 	{
-		glDeleteVertexArrays(1, &data->vao);
-		data->vao = 0;
+		glDeleteVertexArrays(1, &mRenderData->vao);
+		mRenderData->vao = 0;
 	}
 
-	if (data->shaderProgram != 0)
+	if (mRenderData->shaderProgram != 0)
 	{
-		glDeleteProgram(data->shaderProgram);
-		data->shaderProgram = 0;
+		glDeleteProgram(mRenderData->shaderProgram);
+		mRenderData->shaderProgram = 0;
 	}
 
-	if (data->ubo != 0)
+	if (mRenderData->ubo != 0)
 	{
-		glDeleteBuffers(1, &data->ubo);
-		data->ubo = 0;
+		glDeleteBuffers(1, &mRenderData->ubo);
+		mRenderData->ubo = 0;
 	}
 }
 
@@ -211,7 +211,7 @@ void Renderer::beginFrame()
 		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 
-	glBindBuffer(GL_UNIFORM_BUFFER, this->data->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRenderData->ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -230,7 +230,7 @@ void Renderer::clear(float r, float g, float b)
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 						glm::vec4 color) const
 {
-	glUseProgram(data->shaderProgram);
+	glUseProgram(mRenderData->shaderProgram);
 
 	glm::mat4 model = glm::mat4(1.0f);
 
@@ -245,12 +245,13 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 	// Scale
 	model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
 
-	glUniformMatrix4fv(glGetUniformLocation(data->shaderProgram, "model"), 1,
-					   GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(
+		glGetUniformLocation(mRenderData->shaderProgram, "model"), 1, GL_FALSE,
+		glm::value_ptr(model));
 
-	glUniform4fv(glGetUniformLocation(data->shaderProgram, "uColor"), 1,
+	glUniform4fv(glGetUniformLocation(mRenderData->shaderProgram, "uColor"), 1,
 				 glm::value_ptr(color));
 
-	glBindVertexArray(data->vao);
+	glBindVertexArray(mRenderData->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }

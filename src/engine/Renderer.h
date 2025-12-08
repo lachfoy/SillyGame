@@ -31,7 +31,7 @@ class Renderer
 				  glm::vec4 color) const;
 
   private:
-	struct RenderData *data = nullptr;
+	struct RenderData *mRenderData = nullptr;
 
 	struct CameraData
 	{
