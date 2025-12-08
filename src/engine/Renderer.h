@@ -2,11 +2,10 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <unordered_map>
 
 struct Texture
 {
-	uint32_t id = 0;
+	int64_t id = 0;
 	int width = 0;
 	int height = 0;
 };
@@ -14,11 +13,14 @@ struct Texture
 class Renderer
 {
   public:
+	Renderer();
+	~Renderer();
+
 	bool init();
 	void shutdown();
 
 	Texture loadTexture(const char *path);
-	void destroyTexture(Texture texture);
+	void deleteTexture(Texture texture);
 
 	void beginFrame();
 	void endFrame();
@@ -29,7 +31,7 @@ class Renderer
 				  glm::vec4 color) const;
 
   private:
-	uint32_t ubo = 0; // Camera ubo
+	struct RenderData *data = nullptr;
 
 	struct CameraData
 	{
@@ -38,8 +40,4 @@ class Renderer
 		glm::vec3 cameraPos{};
 		float _pad0 = 0.0f; // std140 padding
 	};
-
-	uint32_t shaderProgram = 0;
-	uint32_t vao = 0;
-	uint32_t vbo = 0;
 };

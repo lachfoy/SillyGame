@@ -15,17 +15,36 @@
 
 #include <iostream>
 
+struct GLTexture
+{
+	GLuint id;
+	int width;
+	int height;
+};
+
+struct RenderData
+{
+	GLuint ubo = 0; // Camera ubo
+	GLuint shaderProgram = 0;
+	GLuint vao = 0;
+	GLuint vbo = 0;
+};
+
+Renderer::Renderer() { data = new RenderData(); }
+
+Renderer::~Renderer() { delete data; }
+
 bool Renderer::init()
 {
 	// --- Camera UBO -----------------------------------------------------
-	glGenBuffers(1, &ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glGenBuffers(1, &data->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, data->ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr,
 				 GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Bind the UBO to binding point 0
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, data->ubo);
 
 	// --- Shader ---------------------------------------------------------
 	const char *vs = R"(
@@ -71,17 +90,17 @@ bool Renderer::init()
 	glShaderSource(fragment, 1, &fs, nullptr);
 	glCompileShader(fragment);
 
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertex);
-	glAttachShader(shaderProgram, fragment);
-	glLinkProgram(shaderProgram);
+	data->shaderProgram = glCreateProgram();
+	glAttachShader(data->shaderProgram, vertex);
+	glAttachShader(data->shaderProgram, fragment);
+	glLinkProgram(data->shaderProgram);
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 
 	// Set camera UBO
-	GLuint index = glGetUniformBlockIndex(shaderProgram, "Camera");
-	glUniformBlockBinding(shaderProgram, index, 0);
+	GLuint index = glGetUniformBlockIndex(data->shaderProgram, "Camera");
+	glUniformBlockBinding(data->shaderProgram, index, 0);
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
@@ -89,11 +108,11 @@ bool Renderer::init()
 		-0.5f, -0.5f, 0.0f, 0.5f, 0.5f,	 0.0f, -0.5f, 0.5f, 0.0f,
 	};
 
-	glGenVertexArrays(1, &vao);
-	glGenBuffers(1, &vbo);
+	glGenVertexArrays(1, &data->vao);
+	glGenBuffers(1, &data->vbo);
 
-	glBindVertexArray(vao);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBindVertexArray(data->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, data->vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
 				 GL_STATIC_DRAW);
 
@@ -111,28 +130,28 @@ bool Renderer::init()
 
 void Renderer::shutdown()
 {
-	if (vbo != 0)
+	if (data->vbo != 0)
 	{
-		glDeleteBuffers(1, &vbo);
-		vbo = 0;
+		glDeleteBuffers(1, &data->vbo);
+		data->vbo = 0;
 	}
 
-	if (vao != 0)
+	if (data->vao != 0)
 	{
-		glDeleteVertexArrays(1, &vao);
-		vao = 0;
+		glDeleteVertexArrays(1, &data->vao);
+		data->vao = 0;
 	}
 
-	if (shaderProgram != 0)
+	if (data->shaderProgram != 0)
 	{
-		glDeleteProgram(shaderProgram);
-		shaderProgram = 0;
+		glDeleteProgram(data->shaderProgram);
+		data->shaderProgram = 0;
 	}
 
-	if (ubo != 0)
+	if (data->ubo != 0)
 	{
-		glDeleteBuffers(1, &ubo);
-		ubo = 0;
+		glDeleteBuffers(1, &data->ubo);
+		data->ubo = 0;
 	}
 }
 
@@ -148,9 +167,9 @@ Texture Renderer::loadTexture(const char *path)
 		return {};
 	}
 
-	GLuint glId;
-	glGenTextures(1, &glId);
-	glBindTexture(GL_TEXTURE_2D, glId);
+	GLuint id;
+	glGenTextures(1, &id);
+	glBindTexture(GL_TEXTURE_2D, id);
 
 	// Upload
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
@@ -165,13 +184,21 @@ Texture Renderer::loadTexture(const char *path)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	stbi_image_free(data);
 
-	return {static_cast<uint32_t>(glId), w, h};
+	GLTexture *tex = new GLTexture();
+	tex->id = id;
+	tex->width = w;
+	tex->height = h;
+
+	return {reinterpret_cast<int64_t>(tex), w, h};
 }
 
-void Renderer::destroyTexture(Texture texture)
+void Renderer::deleteTexture(Texture texture)
 {
-	auto glId = static_cast<GLuint>(texture.id);
-	glDeleteTextures(1, &glId);
+	GLTexture *tex = reinterpret_cast<GLTexture *>(texture.id);
+
+	glDeleteTextures(1, &tex->id);
+
+	delete tex;
 }
 
 void Renderer::beginFrame()
@@ -184,7 +211,7 @@ void Renderer::beginFrame()
 		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 
-	glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, this->data->ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -203,7 +230,7 @@ void Renderer::clear(float r, float g, float b)
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 						glm::vec4 color) const
 {
-	glUseProgram(shaderProgram);
+	glUseProgram(data->shaderProgram);
 
 	glm::mat4 model = glm::mat4(1.0f);
 
@@ -218,12 +245,12 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 	// Scale
 	model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
 
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1,
+	glUniformMatrix4fv(glGetUniformLocation(data->shaderProgram, "model"), 1,
 					   GL_FALSE, glm::value_ptr(model));
 
-	glUniform4fv(glGetUniformLocation(shaderProgram, "uColor"), 1,
+	glUniform4fv(glGetUniformLocation(data->shaderProgram, "uColor"), 1,
 				 glm::value_ptr(color));
 
-	glBindVertexArray(vao);
+	glBindVertexArray(data->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }

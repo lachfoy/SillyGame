@@ -2,7 +2,16 @@
 
 #include "../engine/Engine.h"
 
-void World::init() { player = std::make_unique<Player>(); }
+void World::init()
+{
+	player = std::make_unique<Player>();
+
+	// Test loading
+	Texture texture =
+		Engine::instance->renderer->loadTexture("gamedata/Bombette.png");
+
+	Engine::instance->renderer->deleteTexture(texture);
+}
 
 void World::shutdown() { player.reset(); }
 
