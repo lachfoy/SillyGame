@@ -147,6 +147,9 @@ bool Renderer::init()
 	// --- GL State --------------------------------------------------------
 	glEnable(GL_DEPTH_TEST);
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	return true;
 }
 
@@ -189,13 +192,21 @@ Texture Renderer::loadTexture(const char *path)
 		return {};
 	}
 
+	Texture tex = createTexture(data, w, h);
+	stbi_image_free(data);
+
+	return tex;
+}
+
+Texture Renderer::createTexture(unsigned char *data, int width, int height)
+{
 	GLuint id;
 	glGenTextures(1, &id);
 	glBindTexture(GL_TEXTURE_2D, id);
 
 	// Upload
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE,
-				 data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA,
+				 GL_UNSIGNED_BYTE, data);
 
 	// Sampler parameters
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -204,14 +215,13 @@ Texture Renderer::loadTexture(const char *path)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-	stbi_image_free(data);
 
 	GLTexture *tex = new GLTexture();
 	tex->id = id;
-	tex->width = w;
-	tex->height = h;
+	tex->width = width;
+	tex->height = height;
 
-	return {reinterpret_cast<int64_t>(tex), w, h};
+	return {reinterpret_cast<int64_t>(tex), width, height};
 }
 
 void Renderer::deleteTexture(Texture texture)

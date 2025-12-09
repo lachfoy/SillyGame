@@ -20,6 +20,7 @@ class Renderer
 	void shutdown();
 
 	Texture loadTexture(const char *path);
+	Texture createTexture(unsigned char *data, int width, int height);
 	void deleteTexture(Texture texture);
 	
 	void beginFrame();

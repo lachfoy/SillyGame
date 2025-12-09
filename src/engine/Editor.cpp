@@ -59,7 +59,7 @@ void Editor::draw()
 
 	if (ImGui::BeginMenuBar())
 	{
-		ImGui::Combo("##EditorMode", &Engine::instance->mode, "Game\0Editor\0");
+		ImGui::Combo("Mode", &Engine::instance->mode, "Game\0Editor\0");
 		
 		ImGui::EndMenuBar();
 	}

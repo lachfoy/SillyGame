@@ -6,15 +6,14 @@ void World::init()
 {
 	player = std::make_unique<Player>();
 
-	// Test loading
-	texture = Engine::instance->renderer->loadTexture("gamedata/Bombette.png");
+	unsigned char data[] = {0xff, 0xff, 0xff, 0xff};
+	groundTexture = Engine::instance->renderer->createTexture(data, 1, 1);
 }
 
 void World::shutdown()
 {
-	Engine::instance->renderer->deleteTexture(texture);
-
 	player.reset();
+	Engine::instance->renderer->deleteTexture(groundTexture);
 }
 
 void World::update(float dt) { player->update(dt); }
@@ -24,10 +23,8 @@ void World::render()
 	// Ground
 	Engine::instance->renderer->drawQuad(
 		glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
-		glm::vec4(0, 1, 1, 1), texture);
+		glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1), groundTexture);
 
 	// Player
-	Engine::instance->renderer->drawQuad(
-		player->position + glm::vec3(0, 0.5f, 0), glm::vec3(0, 0, 0),
-		glm::vec3(1, 1, 1), glm::vec4(1, 1, 1, 1), texture);
+	player->draw();
 }

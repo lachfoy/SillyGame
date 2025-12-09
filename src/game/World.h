@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Player.h"
-#include <memory>
-
 #include "../engine/Renderer.h"
+#include <memory>
 
 class World
 {
@@ -16,5 +15,5 @@ class World
 
   private:
 	std::unique_ptr<Player> player;
-	Texture texture;
+	Texture groundTexture;
 };
