@@ -3,6 +3,8 @@
 #include "Player.h"
 #include <memory>
 
+#include "../engine/Renderer.h"
+
 class World
 {
   public:
@@ -14,4 +16,5 @@ class World
 
   private:
 	std::unique_ptr<Player> player;
+	Texture texture;
 };

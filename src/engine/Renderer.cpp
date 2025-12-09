@@ -30,6 +30,14 @@ struct RenderData
 	GLuint vbo = 0;
 };
 
+struct CameraData
+{
+	glm::mat4 view{};
+	glm::mat4 proj{};
+	glm::vec3 cameraPos{};
+	float _pad0 = 0.0f; // std140 padding
+};
+
 Renderer::Renderer() { mRenderData = new RenderData(); }
 
 Renderer::~Renderer() { delete mRenderData; }
@@ -50,6 +58,7 @@ bool Renderer::init()
 	const char *vs = R"(
         #version 460 core
         layout (location = 0) in vec3 aPos;
+        layout (location = 1) in vec2 aTexCoords;
 
 		layout(std140) uniform Camera
 		{
@@ -60,25 +69,30 @@ bool Renderer::init()
 		};
 
         uniform mat4 model;
-        uniform vec4 uColor;
 
-        out vec4 fragColor;
+        out vec2 texCoords;
 
         void main()
         {
-            fragColor = uColor;
+			texCoords = aTexCoords;
             gl_Position = uProj * uView * model * vec4(aPos, 1.0);
         }
     )";
 
 	const char *fs = R"(
         #version 460 core
-        in vec4 fragColor;
+
+        in vec2 texCoords;
+
+		uniform sampler2D uTexture;
+		uniform vec4 uColor;
+
         out vec4 FragColor;
 
         void main()
         {
-            FragColor = fragColor;
+			vec4 texColor = texture(uTexture, texCoords);
+            FragColor = texColor * uColor;
         }
     )";
 
@@ -104,8 +118,12 @@ bool Renderer::init()
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
-		-0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f,  0.5f, 0.0f,
-		-0.5f, -0.5f, 0.0f, 0.5f, 0.5f,	 0.0f, -0.5f, 0.5f, 0.0f,
+		// pos        // uv
+		-0.5f, -0.5f, 0.0f,	 0.0f, 0.0f, 0.5f, -0.5f, 0.0f,
+		1.0f,  0.0f,  0.5f,	 0.5f, 0.0f, 1.0f, 1.0f,
+
+		-0.5f, -0.5f, 0.0f,	 0.0f, 0.0f, 0.5f, 0.5f,  0.0f,
+		1.0f,  1.0f,  -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
 	};
 
 	glGenVertexArrays(1, &mRenderData->vao);
@@ -116,9 +134,13 @@ bool Renderer::init()
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
 				 GL_STATIC_DRAW);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float),
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
 						  (void *)0);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
+						  (void *)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
 	glBindVertexArray(0);
 
@@ -228,7 +250,7 @@ void Renderer::clear(float r, float g, float b)
 }
 
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
-						glm::vec4 color) const
+						glm::vec4 color, Texture texture) const
 {
 	glUseProgram(mRenderData->shaderProgram);
 
@@ -251,6 +273,12 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 
 	glUniform4fv(glGetUniformLocation(mRenderData->shaderProgram, "uColor"), 1,
 				 glm::value_ptr(color));
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLTexture *>(texture.id)->id);
+
+	glUniform1i(glGetUniformLocation(mRenderData->shaderProgram, "uTexture"),
+				0);
 
 	glBindVertexArray(mRenderData->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
