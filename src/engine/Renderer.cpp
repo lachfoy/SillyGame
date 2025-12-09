@@ -38,6 +38,8 @@ struct CameraData
 	float _pad0 = 0.0f; // std140 padding
 };
 
+Texture Renderer::sBlankTexture = {};
+
 Renderer::Renderer() { mRenderData = new RenderData(); }
 
 Renderer::~Renderer() { delete mRenderData; }
@@ -150,11 +152,17 @@ bool Renderer::init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	// Blank texture
+	unsigned char data[] = {0xff, 0xff, 0xff, 0xff};
+	sBlankTexture = createTexture(data, 1, 1);
+
 	return true;
 }
 
 void Renderer::shutdown()
 {
+	deleteTexture(sBlankTexture);
+
 	if (mRenderData->vbo != 0)
 	{
 		glDeleteBuffers(1, &mRenderData->vbo);
@@ -178,24 +186,6 @@ void Renderer::shutdown()
 		glDeleteBuffers(1, &mRenderData->ubo);
 		mRenderData->ubo = 0;
 	}
-}
-
-Texture Renderer::loadTexture(const char *path)
-{
-	int w, h, channels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char *data = stbi_load(path, &w, &h, &channels, 4);
-
-	if (!data)
-	{
-		std::cerr << "Failed to load: " << path << std::endl;
-		return {};
-	}
-
-	Texture tex = createTexture(data, w, h);
-	stbi_image_free(data);
-
-	return tex;
 }
 
 Texture Renderer::createTexture(unsigned char *data, int width, int height)
@@ -222,6 +212,24 @@ Texture Renderer::createTexture(unsigned char *data, int width, int height)
 	tex->height = height;
 
 	return {reinterpret_cast<int64_t>(tex), width, height};
+}
+
+Texture Renderer::loadTexture(const char *path)
+{
+	int w, h, channels;
+	stbi_set_flip_vertically_on_load(true);
+	unsigned char *data = stbi_load(path, &w, &h, &channels, 4);
+
+	if (!data)
+	{
+		std::cerr << "Failed to load image: " << path << std::endl;
+		return {};
+	}
+
+	Texture tex = createTexture(data, w, h);
+	stbi_image_free(data);
+
+	return tex;
 }
 
 void Renderer::deleteTexture(Texture texture)
@@ -281,14 +289,14 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 		glGetUniformLocation(mRenderData->shaderProgram, "model"), 1, GL_FALSE,
 		glm::value_ptr(model));
 
+	glUniform1i(glGetUniformLocation(mRenderData->shaderProgram, "uTexture"),
+				0);
+
 	glUniform4fv(glGetUniformLocation(mRenderData->shaderProgram, "uColor"), 1,
 				 glm::value_ptr(color));
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLTexture *>(texture.id)->id);
-
-	glUniform1i(glGetUniformLocation(mRenderData->shaderProgram, "uTexture"),
-				0);
 
 	glBindVertexArray(mRenderData->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);

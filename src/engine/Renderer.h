@@ -19,8 +19,8 @@ class Renderer
 	bool init();
 	void shutdown();
 
-	Texture loadTexture(const char *path);
 	Texture createTexture(unsigned char *data, int width, int height);
+	Texture loadTexture(const char *path);
 	void deleteTexture(Texture texture);
 	
 	void beginFrame();
@@ -29,8 +29,9 @@ class Renderer
 	void clear(float r, float g, float b);
 
 	void drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
-				  glm::vec4 color, Texture texture) const;
+				  glm::vec4 color, Texture texture = sBlankTexture) const;
 
   private:
 	struct RenderData *mRenderData = nullptr;
+	static Texture sBlankTexture;
 };
