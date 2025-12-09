@@ -66,5 +66,8 @@
     <ClInclude Include="src\engine\Editor.h">
       <Filter>src\engine</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\Entity.h">
+      <Filter>src\engine</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

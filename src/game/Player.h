@@ -2,17 +2,17 @@
 
 #include <glm/glm.hpp>
 
+#include "../engine/Entity.h"
 #include "../engine/Renderer.h"
 
-class Player
+class Player : public Entity
 {
   public:
 	Player();
 	~Player();
 
-	void update(float dt);
-
-	void draw();
+	virtual void update(float dt) override;
+	virtual void render() override;
 
   private:
 	glm::vec3 position = glm::vec3(0, 0, 0);
@@ -22,6 +22,4 @@ class Player
 
 	Texture texture;
 	Texture shadowTexture;
-
-	friend class World;
 };

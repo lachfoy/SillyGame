@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Player.h"
 #include "../engine/Renderer.h"
+#include "../engine/Entity.h"
 #include <memory>
+#include <vector>
 
 class World
 {
@@ -14,6 +15,5 @@ class World
 	void render();
 
   private:
-	std::unique_ptr<Player> player;
-	Texture groundTexture;
+	std::vector<std::unique_ptr<Entity>> entities;
 };
