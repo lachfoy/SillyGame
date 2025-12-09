@@ -3,7 +3,7 @@
 #include "../engine/Engine.h"
 #include "Player.h"
 
-void World::init() { entities.push_back(std::make_unique<Player>()); }
+void World::init() { createEntity<Player>(); }
 
 void World::shutdown() { entities.clear(); }
 

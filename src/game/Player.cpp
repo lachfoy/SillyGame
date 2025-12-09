@@ -74,8 +74,7 @@ void Player::update(float dt)
 	spaceWasDown = spaceDown;
 }
 
-void Player::render()
-{
+void Player::render() {
 	constexpr const float groundY = 0.f;
 	constexpr const float lightHeight = 10.f;
 	constexpr const float baseShadowScale = 1.f;
