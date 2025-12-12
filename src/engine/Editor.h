@@ -10,6 +10,8 @@ class Editor
 
 	void processEvent(const SDL_Event &e);
 
+	void update(float dt);
+
 	void beginFrame();
 	void draw();
 	void endFrame();

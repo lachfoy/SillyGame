@@ -50,8 +50,12 @@ int main(int argc, char *argv[])
 			{
 				engine.world->update((float)engine.fixedDelta);
 			}
-
-			engine.camera->update((float)engine.fixedDelta);
+#ifdef WITH_EDITOR
+			else
+			{
+				engine.editor->update((float)engine.fixedDelta);
+			}
+#endif
 
 			accumulator -= engine.fixedDelta;
 		}

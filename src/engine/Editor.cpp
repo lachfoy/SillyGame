@@ -32,6 +32,53 @@ void Editor::processEvent(const SDL_Event &e)
 	ImGui_ImplSDL3_ProcessEvent(&e);
 }
 
+void Editor::update(float dt)
+{
+	// ----- Movement -----
+	constexpr float moveSpeed = 5.f;
+	constexpr float rotSpeed = 90.0f;
+
+	auto *cam = Engine::instance->camera.get();
+
+	glm::vec3 forward;
+	forward.x = sin(glm::radians(cam->rotation.y));
+	forward.y = 0;
+	forward.z = -cos(glm::radians(cam->rotation.y));
+
+	glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0, 1, 0)));
+
+	if (Engine::instance->input->isDown(SDLK_W))
+		cam->position += forward * moveSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_S))
+		cam->position -= forward * moveSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_A))
+		cam->position -= right * moveSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_D))
+		cam->position += right * moveSpeed * dt;
+
+	// vertical movement
+	if (Engine::instance->input->isDown(SDLK_SPACE))
+		cam->position.y += moveSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_LCTRL))
+		cam->position.y -= moveSpeed * dt;
+
+	//// ----- Rotation -----
+	if (Engine::instance->input->isDown(SDLK_UP))
+		cam->rotation.x -= rotSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_DOWN))
+		cam->rotation.x += rotSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_LEFT))
+		cam->rotation.y -= rotSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_RIGHT))
+		cam->rotation.y += rotSpeed * dt;
+
+	// prevent pitch flipping
+	if (cam->rotation.x > 89.f)
+		cam->rotation.x = 89.f;
+	if (cam->rotation.x < -89.f)
+		cam->rotation.x = -89.f;
+}
+
 void Editor::beginFrame()
 {
 	ImGui_ImplOpenGL3_NewFrame();
@@ -60,7 +107,7 @@ void Editor::draw()
 	if (ImGui::BeginMenuBar())
 	{
 		ImGui::Combo("Mode", &Engine::instance->mode, "Game\0Editor\0");
-		
+
 		ImGui::EndMenuBar();
 	}
 
