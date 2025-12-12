@@ -35,8 +35,8 @@ void Editor::processEvent(const SDL_Event &e)
 void Editor::update(float dt)
 {
 	// ----- Movement -----
-	constexpr float moveSpeed = 5.f;
-	constexpr float rotSpeed = 90.0f;
+	constexpr const float moveSpeed = 5.f;
+	constexpr const float rotSpeed = 90.0f;
 
 	auto *cam = Engine::instance->camera.get();
 
