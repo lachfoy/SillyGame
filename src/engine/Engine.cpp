@@ -55,16 +55,16 @@ bool Engine::init()
 	renderer = std::make_unique<Renderer>();
 	renderer->init();
 
-	world = std::make_unique<World>();
-	world->init();
-
 	return true;
 }
 
 void Engine::shutdown()
 {
-	world->shutdown();
-	world.reset();
+	if (world)
+	{
+		world->shutdown();
+		world.reset();
+	}
 
 	renderer->shutdown();
 	renderer.reset();
@@ -90,4 +90,10 @@ void Engine::shutdown()
 	}
 
 	SDL_Quit();
+}
+
+void Engine::setWorld(std::unique_ptr<World> _world)
+{
+	world = std::move(_world);
+	world->init();
 }

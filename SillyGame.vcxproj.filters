@@ -17,9 +17,6 @@
     <ClCompile Include="src\main.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="src\game\World.cpp">
-      <Filter>src\game</Filter>
-    </ClCompile>
     <ClCompile Include="src\game\Player.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
@@ -31,6 +28,9 @@
     <ClCompile Include="..\imgui-1.92.5\imgui_tables.cpp" />
     <ClCompile Include="src\engine\Editor.cpp">
       <Filter>src\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="src\game\GameWorld.cpp">
+      <Filter>src\game</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -57,9 +57,6 @@
     <ClInclude Include="src\engine\Camera.h">
       <Filter>src\engine</Filter>
     </ClInclude>
-    <ClInclude Include="src\game\World.h">
-      <Filter>src\game</Filter>
-    </ClInclude>
     <ClInclude Include="src\game\Player.h">
       <Filter>src\game</Filter>
     </ClInclude>
@@ -68,6 +65,12 @@
     </ClInclude>
     <ClInclude Include="src\engine\Entity.h">
       <Filter>src\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\World.h">
+      <Filter>src\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\GameWorld.h">
+      <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

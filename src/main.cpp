@@ -1,5 +1,7 @@
 #include "engine/Engine.h"
 
+#include "game/GameWorld.h"
+
 #include <SDL3/SDL.h>
 #include <iostream>
 
@@ -9,6 +11,8 @@ int main(int argc, char *argv[])
 
 	if (!engine.init())
 		return 1;
+
+	engine.setWorld(std::make_unique<GameWorld>());
 
 	// Main loop
 	double lastTime = SDL_GetTicks() * 0.001;

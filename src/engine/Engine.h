@@ -3,7 +3,7 @@
 #include <SDL3/SDL.h>
 #include <memory>
 
-#include "../game/World.h"
+#include "World.h"
 #include "Camera.h"
 #include "Editor.h"
 #include "Input.h"
@@ -19,6 +19,8 @@ struct Engine
 	bool init();
 	void shutdown();
 
+	void setWorld(std::unique_ptr<World> world);
+
 	SDL_Window *window = nullptr;
 	SDL_GLContext glContext = nullptr;
 
@@ -26,10 +28,10 @@ struct Engine
 	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;
 	std::unique_ptr<World> world;
-
 #ifdef WITH_EDITOR
 	std::unique_ptr<Editor> editor;
 #endif
+
 	int mode = 0;
 
 	double fixedDelta = 1.0 / 60.0;
