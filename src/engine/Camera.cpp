@@ -14,3 +14,18 @@ glm::mat4 Camera::getViewMatrix() const
 
 	return view;
 }
+
+void Camera::lookAt(glm::vec3 target)
+{
+	glm::vec3 dir = glm::normalize(target - position);
+
+	// yaw: rotation around Y axis
+	float yaw = atan2(dir.x, -dir.z);
+
+	// pitch: rotation around X axis
+	float pitch = asin(dir.y);
+
+	rotation.x = glm::degrees(pitch);
+	rotation.y = glm::degrees(yaw);
+	rotation.z = 0.0f;
+}

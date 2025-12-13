@@ -108,7 +108,23 @@ void Editor::draw()
 	{
 		ImGui::Combo("Mode", &Engine::instance->mode, "Game\0Editor\0");
 
+		for (auto &tool : mTools)
+		{
+			ImGui::MenuItem(tool->name.c_str(), nullptr, &tool->open);
+		}
+
 		ImGui::EndMenuBar();
+	}
+
+	for (auto &tool : mTools)
+	{
+		if (!tool->open)
+			continue;
+		if (ImGui::Begin(tool->name.c_str(), &tool->open))
+		{
+			tool->draw();
+			ImGui::End();
+		}
 	}
 
 	ImGui::End();
