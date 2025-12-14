@@ -64,13 +64,13 @@ void Editor::update(float dt)
 
 	//// ----- Rotation -----
 	if (Engine::instance->input->isDown(SDLK_UP))
-		cam->rotation.x -= rotSpeed * dt;
-	if (Engine::instance->input->isDown(SDLK_DOWN))
 		cam->rotation.x += rotSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_DOWN))
+		cam->rotation.x -= rotSpeed * dt;
 	if (Engine::instance->input->isDown(SDLK_LEFT))
-		cam->rotation.y -= rotSpeed * dt;
-	if (Engine::instance->input->isDown(SDLK_RIGHT))
 		cam->rotation.y += rotSpeed * dt;
+	if (Engine::instance->input->isDown(SDLK_RIGHT))
+		cam->rotation.y -= rotSpeed * dt;
 
 	// prevent pitch flipping
 	if (cam->rotation.x > 89.f)

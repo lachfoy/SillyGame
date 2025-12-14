@@ -5,9 +5,12 @@
 
 struct params_Camera
 {
-	float baseDistance = 8.0f;
+	float baseDistance = 7.5f;
 	float zoomFactor = 0.6f;
 	float followSpeed = 3.0f;
+	float cameraHeight = 2.5f;
+	float playerHeight = 0.7f;
+	float pitchSpeed = 0.5f;
 };
 
 #ifdef WITH_EDITOR
@@ -21,9 +24,12 @@ struct CameraParams : public EditorTool
 
 	void draw() override
 	{
-		ImGui::DragFloat("baseDistance", &params->baseDistance, 0.0f, 5.f,
-						 20.f);
-		ImGui::DragFloat("zoomFactor", &params->zoomFactor, 0.1f, 0.6f, 2.f);
+		ImGui::SliderFloat("baseDistance", &params->baseDistance, 0.0f, 20.f);
+		ImGui::SliderFloat("zoomFactor", &params->zoomFactor, 0.1f, 2.f);
+		ImGui::SliderFloat("followSpeed", &params->followSpeed, 1.f, 10.f);
+		ImGui::SliderFloat("cameraHeight", &params->cameraHeight, 0.f, 8.8f);
+		ImGui::SliderFloat("playerHeight", &params->playerHeight, 0.f, 8.8f);
+		ImGui::SliderFloat("pitchSpeed", &params->pitchSpeed, 0.5f, 3.f);
 	}
 
   private:
@@ -46,9 +52,14 @@ void GameWorld::update(float dt)
 {
 	World::update(dt);
 
+#if 1
 	auto *cam = Engine::instance->camera.get();
 
-	std::vector<glm::vec3> targets = {mPlayer->position};
+	glm::vec3 playerTarget = mPlayer->position;
+	playerTarget.y += cameraParams.playerHeight;
+	std::vector<glm::vec3> targets = {playerTarget};
+
+	glm::vec3 deadzone = glm::vec3(1.0f, 0.5f, 1.0f);
 
 	glm::vec3 min = targets[0];
 	glm::vec3 max = targets[0];
@@ -62,21 +73,32 @@ void GameWorld::update(float dt)
 	glm::vec3 center = (min + max) * 0.5f;
 	glm::vec3 extents = max - min;
 
-	constexpr const float baseDistance = 8.0f;
-	constexpr const float zoomFactor = 0.6f;
 	float spread = glm::length(extents); // how big the action is
-	float desiredDistance = baseDistance + spread * zoomFactor;
+	float desiredDistance =
+		cameraParams.baseDistance + spread * cameraParams.zoomFactor;
 
-	glm::vec3 cameraDir =
-		glm::normalize(glm::vec3(0.0f, 0.0f, 1.f)); // angled down
-	glm::vec3 desiredPos =
-		center + glm::vec3(0, 1.f, 0) + cameraDir * desiredDistance;
+	glm::vec3 desiredPos = center;
+	desiredPos.y += cameraParams.cameraHeight;
+	desiredPos.z += desiredDistance;
 
-	constexpr const float followSpeed = 3.0f;
 
-	cam->position =
-		glm::mix(cam->position, desiredPos, 1.0f - exp(-followSpeed * dt));
-	cam->lookAt(center);
+	// Separate vertical speed to add a dampening
+	cam->position.y =
+		glm::mix(cam->position.y, desiredPos.y,
+				 1.0f - exp(-(cameraParams.followSpeed * 0.5f) * dt));
+
+	cam->position.x = glm::mix(cam->position.x, desiredPos.x,
+							   1.0f - exp(-cameraParams.followSpeed * dt));
+	cam->position.z = glm::mix(cam->position.z, desiredPos.z,
+							   1.0f - exp(-cameraParams.followSpeed * dt));
+
+	// Calculate look-at only affecting pitch
+	glm::vec3 d = center - cam->position;
+	float distXZ = glm::sqrt(d.x * d.x + d.z * d.z);
+	float desiredPitch = glm::degrees(atan2(d.y, distXZ));
+	cam->rotation.x = glm::mix(cam->rotation.x, desiredPitch,
+							   1.0f - exp(-cameraParams.pitchSpeed * dt));
+#endif
 }
 
 void GameWorld::render()
@@ -84,5 +106,6 @@ void GameWorld::render()
 	Engine::instance->renderer->drawQuad(
 		glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
 		glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
+
 	World::render();
 }
