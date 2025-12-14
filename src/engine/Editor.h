@@ -7,13 +7,13 @@
 
 struct EditorTool
 {
-	EditorTool(const std::string &_name) : name(_name) {}
+	explicit EditorTool(const std::string &_name) : name(_name) {}
 	virtual ~EditorTool() = default;
 
 	virtual void draw() = 0;
 
 	bool open = false;
-	std::string name = {};
+	std::string name;
 };
 
 class Editor

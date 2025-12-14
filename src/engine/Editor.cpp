@@ -88,46 +88,40 @@ void Editor::beginFrame()
 
 void Editor::draw()
 {
-	ImGuiViewport *viewport = ImGui::GetMainViewport();
-	ImGui::SetNextWindowPos(viewport->Pos);
-	ImGui::SetNextWindowSize(viewport->Size);
-
-	ImGuiWindowFlags windowFlags = 0;
-	windowFlags |= ImGuiWindowFlags_NoTitleBar;
-	windowFlags |= ImGuiWindowFlags_NoScrollbar;
-	windowFlags |= ImGuiWindowFlags_MenuBar;
-	windowFlags |= ImGuiWindowFlags_NoMove;
-	windowFlags |= ImGuiWindowFlags_NoResize;
-	windowFlags |= ImGuiWindowFlags_NoCollapse;
-	windowFlags |= ImGuiWindowFlags_NoNav;
-	windowFlags |= ImGuiWindowFlags_NoBackground;
-
-	ImGui::Begin("Editor Window", NULL, windowFlags);
-
-	if (ImGui::BeginMenuBar())
+	if (ImGui::BeginMainMenuBar())
 	{
-		ImGui::Combo("Mode", &Engine::instance->mode, "Game\0Editor\0");
+		// ImGui::SetNextItemWidth(100.f);
+		ImGui::Combo("Mode", &Engine::instance->mode, "Game\0Editor\0\0");
 
-		for (auto &tool : mTools)
+		ImGui::Separator();
+
+		// ImGui::SetNextItemWidth(100.f);
+		if (ImGui::BeginMenu("Tools"))
 		{
-			ImGui::MenuItem(tool->name.c_str(), nullptr, &tool->open);
+			for (const auto &tool : mTools)
+			{
+				ImGui::MenuItem(tool->name.c_str(), nullptr, &tool->open);
+			}
+
+			ImGui::EndMenu();
 		}
 
-		ImGui::EndMenuBar();
+		ImGui::Separator();
+
+		ImGui::EndMainMenuBar();
 	}
 
 	for (auto &tool : mTools)
 	{
 		if (!tool->open)
 			continue;
-		if (ImGui::Begin(tool->name.c_str(), &tool->open))
+
+		ImGui::Begin(tool->name.c_str(), &tool->open);
 		{
 			tool->draw();
-			ImGui::End();
 		}
+		ImGui::End();
 	}
-
-	ImGui::End();
 }
 
 void Editor::endFrame()
