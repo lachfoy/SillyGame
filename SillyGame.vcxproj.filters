@@ -32,6 +32,12 @@
     <ClCompile Include="src\game\GameWorld.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="src\game\ShadowCaster.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
+    <ClCompile Include="src\game\Asteroid.cpp">
+      <Filter>src\game</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -70,6 +76,15 @@
       <Filter>src\engine</Filter>
     </ClInclude>
     <ClInclude Include="src\game\GameWorld.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\Asteroid.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\ShadowCaster.h">
+      <Filter>src\game</Filter>
+    </ClInclude>
+    <ClInclude Include="src\game\Sprite.h">
       <Filter>src\game</Filter>
     </ClInclude>
   </ItemGroup>

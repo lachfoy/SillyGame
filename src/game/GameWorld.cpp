@@ -1,23 +1,39 @@
 #include "GameWorld.h"
 
 #include "../engine/Engine.h"
+#include "Asteroid.h"
 #include "Player.h"
 
-struct params_Camera
+inline float rand01()
+{
+	return static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
+}
+
+static glm::vec3 randomPointInCube(glm::vec3 center, float size)
+{
+	const float h = size * 0.5f;
+
+	return glm::vec3(center.x + (rand01() * 2.0f - 1.0f) * h,
+					 center.y + (rand01() * 2.0f - 1.0f) * h,
+					 center.z + (rand01() * 2.0f - 1.0f) * h);
+}
+
+struct Camera_params
 {
 	float baseDistance = 7.5f;
 	float zoomFactor = 0.6f;
 	float followSpeed = 3.0f;
 	float cameraHeight = 2.5f;
 	float playerHeight = 0.7f;
-	float pitchSpeed = 0.5f;
+	// float pitchSpeed = 0.5f;
+	float verticalSpeedDamping = 0.5f;
 };
 
 #ifdef WITH_EDITOR
 #include <imgui.h>
 struct CameraParams : public EditorTool
 {
-	CameraParams(params_Camera *_params)
+	CameraParams(Camera_params *_params)
 		: EditorTool("CameraParams"), params(_params)
 	{
 	}
@@ -29,15 +45,17 @@ struct CameraParams : public EditorTool
 		ImGui::SliderFloat("followSpeed", &params->followSpeed, 1.f, 10.f);
 		ImGui::SliderFloat("cameraHeight", &params->cameraHeight, 0.f, 8.8f);
 		ImGui::SliderFloat("playerHeight", &params->playerHeight, 0.f, 8.8f);
-		ImGui::SliderFloat("pitchSpeed", &params->pitchSpeed, 0.5f, 3.f);
+		// ImGui::SliderFloat("pitchSpeed", &params->pitchSpeed, 0.5f, 3.f);
+		ImGui::SliderFloat("verticalSpeedDamping",
+						   &params->verticalSpeedDamping, 0.0f, 1.f);
 	}
 
   private:
-	params_Camera *params;
+	Camera_params *params;
 };
 #endif
 
-params_Camera cameraParams;
+Camera_params cameraParams;
 
 void GameWorld::init()
 {
@@ -52,12 +70,15 @@ void GameWorld::update(float dt)
 {
 	World::update(dt);
 
-#if 1
 	auto *cam = Engine::instance->camera.get();
 
 	glm::vec3 playerTarget = mPlayer->position;
 	playerTarget.y += cameraParams.playerHeight;
 	std::vector<glm::vec3> targets = {playerTarget};
+	for (const auto &asteroid : mAsteroids)
+	{
+		targets.push_back(asteroid->position);
+	}
 
 	glm::vec3 deadzone = glm::vec3(1.0f, 0.5f, 1.0f);
 
@@ -81,24 +102,33 @@ void GameWorld::update(float dt)
 	desiredPos.y += cameraParams.cameraHeight;
 	desiredPos.z += desiredDistance;
 
-
 	// Separate vertical speed to add a dampening
-	cam->position.y =
-		glm::mix(cam->position.y, desiredPos.y,
-				 1.0f - exp(-(cameraParams.followSpeed * 0.5f) * dt));
+	cam->position.y = glm::mix(cam->position.y, desiredPos.y,
+							   1.0f - exp(-(cameraParams.followSpeed *
+											cameraParams.verticalSpeedDamping) *
+										  dt));
 
 	cam->position.x = glm::mix(cam->position.x, desiredPos.x,
 							   1.0f - exp(-cameraParams.followSpeed * dt));
 	cam->position.z = glm::mix(cam->position.z, desiredPos.z,
 							   1.0f - exp(-cameraParams.followSpeed * dt));
 
-	// Calculate look-at only affecting pitch
+// Calculate look-at only affecting pitch
+// Not sure if I want this at all
+#if 0
 	glm::vec3 d = center - cam->position;
 	float distXZ = glm::sqrt(d.x * d.x + d.z * d.z);
 	float desiredPitch = glm::degrees(atan2(d.y, distXZ));
 	cam->rotation.x = glm::mix(cam->rotation.x, desiredPitch,
 							   1.0f - exp(-cameraParams.pitchSpeed * dt));
 #endif
+
+	if (Engine::instance->input->pressed(SDLK_Z))
+	{
+		auto asteroid = createEntity<Asteroid>();
+		asteroid->position = randomPointInCube(glm::vec3(0, 2, 0), 5);
+		mAsteroids.push_back(asteroid);
+	}
 }
 
 void GameWorld::render()

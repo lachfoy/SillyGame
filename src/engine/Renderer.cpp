@@ -94,6 +94,10 @@ bool Renderer::init()
         void main()
         {
 			vec4 texColor = texture(uTexture, texCoords);
+
+			if (texColor.a < 0.5)
+				discard;
+
             FragColor = texColor * uColor;
         }
     )";

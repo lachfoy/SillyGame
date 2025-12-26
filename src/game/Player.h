@@ -2,10 +2,10 @@
 
 #include <glm/glm.hpp>
 
-#include "../engine/Entity.h"
+#include "ShadowCaster.h"
 #include "../engine/Renderer.h"
 
-class Player : public Entity
+class Player : public ShadowCaster
 {
   public:
 	Player();
@@ -20,5 +20,4 @@ class Player : public Entity
 	bool isGrounded = true;
 
 	Texture texture;
-	Texture shadowTexture;
 };

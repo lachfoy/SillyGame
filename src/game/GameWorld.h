@@ -1,10 +1,10 @@
 #pragma once
 
 #include "../engine/World.h"
-#include <memory>
 #include <vector>
 
 class Player;
+class Asteroid;
 
 class GameWorld : public World
 {
@@ -16,4 +16,5 @@ class GameWorld : public World
 
   private:
 	Player *mPlayer = nullptr;
+	std::vector<Asteroid *> mAsteroids;
 };

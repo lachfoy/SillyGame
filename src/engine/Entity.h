@@ -5,7 +5,7 @@
 class Entity
 {
   public:
-	virtual ~Entity() {}
+	virtual ~Entity() = default;
 
 	virtual void update(float dt) {}
 	virtual void render() {}
