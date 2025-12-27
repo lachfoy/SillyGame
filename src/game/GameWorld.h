@@ -16,5 +16,4 @@ class GameWorld : public World
 
   private:
 	Player *mPlayer = nullptr;
-	std::vector<Asteroid *> mAsteroids;
 };

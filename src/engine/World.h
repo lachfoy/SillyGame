@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Entity.h"
+#include <gsl/span>
 #include <memory>
 #include <vector>
 
@@ -22,10 +23,31 @@ class World
 		return ptr;
 	}
 
+	template <typename T> gsl::span<T *> view()
+	{
+		static_assert(std::is_base_of_v<Entity, T>);
+
+		mViewScratch.clear();
+
+		for (auto &e : mEntities)
+		{
+			if (auto *t = dynamic_cast<T *>(e.get()))
+				mViewScratch.push_back(t);
+		}
+
+		return {reinterpret_cast<T **>(mViewScratch.data()),
+				mViewScratch.size()};
+	}
+
 	virtual void update(float dt)
 	{
 		for (auto &e : mEntities)
 			e->update(dt);
+
+		mEntities.erase(std::remove_if(mEntities.begin(), mEntities.end(),
+									   [](const auto &e)
+									   { return e->isPendingDestroy(); }),
+						mEntities.end());
 	}
 
 	virtual void render()
@@ -36,4 +58,5 @@ class World
 
   private:
 	std::vector<std::unique_ptr<Entity>> mEntities;
+	std::vector<Entity *> mViewScratch; // scratch mem for allocation
 };

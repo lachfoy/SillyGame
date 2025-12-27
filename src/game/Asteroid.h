@@ -15,4 +15,5 @@ class Asteroid : public ShadowCaster
 	virtual void render() override;
 
   private:
+	float yVel = 0.f;
 };

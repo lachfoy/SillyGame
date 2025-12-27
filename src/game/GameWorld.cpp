@@ -75,12 +75,12 @@ void GameWorld::update(float dt)
 	glm::vec3 playerTarget = mPlayer->position;
 	playerTarget.y += cameraParams.playerHeight;
 	std::vector<glm::vec3> targets = {playerTarget};
-	for (const auto &asteroid : mAsteroids)
+
+	auto asteroids = World::view<Asteroid>();
+	for (const auto &asteroid : asteroids)
 	{
 		targets.push_back(asteroid->position);
 	}
-
-	glm::vec3 deadzone = glm::vec3(1.0f, 0.5f, 1.0f);
 
 	glm::vec3 min = targets[0];
 	glm::vec3 max = targets[0];
@@ -125,9 +125,8 @@ void GameWorld::update(float dt)
 
 	if (Engine::instance->input->pressed(SDLK_Z))
 	{
-		auto asteroid = createEntity<Asteroid>();
-		asteroid->position = randomPointInCube(glm::vec3(0, 2, 0), 5);
-		mAsteroids.push_back(asteroid);
+		auto* asteroid = createEntity<Asteroid>();
+		asteroid->position = randomPointInCube(glm::vec3(0, 4.5f, 0), 5);
 	}
 }
 
