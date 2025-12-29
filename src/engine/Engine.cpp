@@ -2,7 +2,6 @@
 
 #include <glad/glad.h>
 #include <iostream>
-
 #include <SDL3/SDL_gamepad.h>
 
 Engine *Engine::instance = nullptr;
@@ -43,7 +42,7 @@ bool Engine::init()
 
 	std::cout << "OpenGL Version: " << glGetString(GL_VERSION) << std::endl;
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	editor = std::make_unique<Editor>();
 	editor->init(window, glContext);
 #endif
@@ -72,7 +71,7 @@ void Engine::shutdown()
 	camera.reset();
 	input.reset();
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	editor->shutdown();
 	editor.reset();
 #endif

@@ -29,7 +29,7 @@ struct Camera_params
 	float verticalSpeedDamping = 0.5f;
 };
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 #include <imgui.h>
 struct CameraParams : public EditorTool
 {
@@ -61,7 +61,7 @@ void GameWorld::init()
 {
 	mPlayer = createEntity<Player>();
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	Engine::instance->editor->registerTool<CameraParams>(&cameraParams);
 #endif
 }

@@ -15,7 +15,7 @@ glm::mat4 Camera::getViewMatrix() const
 	return view;
 }
 
-void Camera::lookAt(const glm::vec3& target)
+void Camera::lookAt(const glm::vec3 &target)
 {
 	glm::vec3 dir = glm::normalize(target - position);
 

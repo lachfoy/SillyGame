@@ -1,9 +1,10 @@
-#include "engine/Engine.h"
-
-#include "game/GameWorld.h"
+#include "engine/EngineDefs.h"
 
 #include <SDL3/SDL.h>
 #include <iostream>
+
+#include "engine/Engine.h"
+#include "game/GameWorld.h"
 
 int main(int argc, char *argv[])
 {
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
 
 		while (SDL_PollEvent(&e))
 		{
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 			engine.editor->processEvent(e);
 #endif
 
@@ -50,7 +51,7 @@ int main(int argc, char *argv[])
 			{
 				engine.world->update((float)engine.fixedDelta);
 			}
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 			else
 			{
 				engine.editor->update((float)engine.fixedDelta);
@@ -66,7 +67,7 @@ int main(int argc, char *argv[])
 
 		engine.world->render();
 
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 		engine.editor->beginFrame();
 		engine.editor->draw();
 		engine.editor->endFrame();

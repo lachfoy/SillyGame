@@ -87,5 +87,8 @@
     <ClInclude Include="src\game\Sprite.h">
       <Filter>src\game</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\EngineDefs.h">
+      <Filter>src\engine</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,15 +1,15 @@
 #pragma once
 
+#include "EngineDefs.h"
+
 #include <SDL3/SDL.h>
 #include <memory>
 
-#include "World.h"
 #include "Camera.h"
 #include "Editor.h"
 #include "Input.h"
 #include "Renderer.h"
-
-#define WITH_EDITOR 1
+#include "World.h"
 
 struct Engine
 {
@@ -28,7 +28,7 @@ struct Engine
 	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;
 	std::unique_ptr<World> world;
-#ifdef WITH_EDITOR
+#if WITH_EDITOR
 	std::unique_ptr<Editor> editor;
 #endif
 

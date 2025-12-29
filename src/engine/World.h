@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Entity.h"
 #include <gsl/span>
 #include <memory>
 #include <vector>
+
+#include "Entity.h"
 
 class World
 {
