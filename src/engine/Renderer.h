@@ -32,6 +32,6 @@ class Renderer
 				  glm::vec4 color, Texture texture = sBlankTexture) const;
 
   private:
-	struct RenderData *mRenderData = nullptr;
+	struct RendererData *mRendererData = nullptr;
 	static Texture sBlankTexture;
 };

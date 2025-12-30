@@ -22,7 +22,7 @@ struct GLTexture
 	int height;
 };
 
-struct RenderData
+struct RendererData
 {
 	GLuint ubo = 0; // Camera ubo
 	GLuint shaderProgram = 0;
@@ -40,21 +40,21 @@ struct CameraData
 
 Texture Renderer::sBlankTexture = {};
 
-Renderer::Renderer() { mRenderData = new RenderData(); }
+Renderer::Renderer() { mRendererData = new RendererData(); }
 
-Renderer::~Renderer() { delete mRenderData; }
+Renderer::~Renderer() { delete mRendererData; }
 
 bool Renderer::init()
 {
 	// --- Camera UBO -----------------------------------------------------
-	glGenBuffers(1, &mRenderData->ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, mRenderData->ubo);
+	glGenBuffers(1, &mRendererData->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererData->ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr,
 				 GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Bind the UBO to binding point 0
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRenderData->ubo);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRendererData->ubo);
 
 	// --- Shader ---------------------------------------------------------
 	const char *vs = R"(
@@ -110,17 +110,18 @@ bool Renderer::init()
 	glShaderSource(fragment, 1, &fs, nullptr);
 	glCompileShader(fragment);
 
-	mRenderData->shaderProgram = glCreateProgram();
-	glAttachShader(mRenderData->shaderProgram, vertex);
-	glAttachShader(mRenderData->shaderProgram, fragment);
-	glLinkProgram(mRenderData->shaderProgram);
+	mRendererData->shaderProgram = glCreateProgram();
+	glAttachShader(mRendererData->shaderProgram, vertex);
+	glAttachShader(mRendererData->shaderProgram, fragment);
+	glLinkProgram(mRendererData->shaderProgram);
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 
 	// Set camera UBO
-	GLuint index = glGetUniformBlockIndex(mRenderData->shaderProgram, "Camera");
-	glUniformBlockBinding(mRenderData->shaderProgram, index, 0);
+	GLuint index =
+		glGetUniformBlockIndex(mRendererData->shaderProgram, "Camera");
+	glUniformBlockBinding(mRendererData->shaderProgram, index, 0);
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
@@ -132,11 +133,11 @@ bool Renderer::init()
 		1.0f,  1.0f,  -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
 	};
 
-	glGenVertexArrays(1, &mRenderData->vao);
-	glGenBuffers(1, &mRenderData->vbo);
+	glGenVertexArrays(1, &mRendererData->vao);
+	glGenBuffers(1, &mRendererData->vbo);
 
-	glBindVertexArray(mRenderData->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, mRenderData->vbo);
+	glBindVertexArray(mRendererData->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, mRendererData->vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
 				 GL_STATIC_DRAW);
 
@@ -167,28 +168,28 @@ void Renderer::shutdown()
 {
 	deleteTexture(sBlankTexture);
 
-	if (mRenderData->vbo != 0)
+	if (mRendererData->vbo != 0)
 	{
-		glDeleteBuffers(1, &mRenderData->vbo);
-		mRenderData->vbo = 0;
+		glDeleteBuffers(1, &mRendererData->vbo);
+		mRendererData->vbo = 0;
 	}
 
-	if (mRenderData->vao != 0)
+	if (mRendererData->vao != 0)
 	{
-		glDeleteVertexArrays(1, &mRenderData->vao);
-		mRenderData->vao = 0;
+		glDeleteVertexArrays(1, &mRendererData->vao);
+		mRendererData->vao = 0;
 	}
 
-	if (mRenderData->shaderProgram != 0)
+	if (mRendererData->shaderProgram != 0)
 	{
-		glDeleteProgram(mRenderData->shaderProgram);
-		mRenderData->shaderProgram = 0;
+		glDeleteProgram(mRendererData->shaderProgram);
+		mRendererData->shaderProgram = 0;
 	}
 
-	if (mRenderData->ubo != 0)
+	if (mRendererData->ubo != 0)
 	{
-		glDeleteBuffers(1, &mRenderData->ubo);
-		mRenderData->ubo = 0;
+		glDeleteBuffers(1, &mRendererData->ubo);
+		mRendererData->ubo = 0;
 	}
 }
 
@@ -255,7 +256,7 @@ void Renderer::beginFrame()
 		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 
-	glBindBuffer(GL_UNIFORM_BUFFER, mRenderData->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererData->ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -274,7 +275,7 @@ void Renderer::clear(float r, float g, float b)
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 						glm::vec4 color, Texture texture) const
 {
-	glUseProgram(mRenderData->shaderProgram);
+	glUseProgram(mRendererData->shaderProgram);
 
 	glm::mat4 model = glm::mat4(1.0f);
 
@@ -290,18 +291,18 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 	model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
 
 	glUniformMatrix4fv(
-		glGetUniformLocation(mRenderData->shaderProgram, "model"), 1, GL_FALSE,
-		glm::value_ptr(model));
+		glGetUniformLocation(mRendererData->shaderProgram, "model"), 1,
+		GL_FALSE, glm::value_ptr(model));
 
-	glUniform1i(glGetUniformLocation(mRenderData->shaderProgram, "uTexture"),
+	glUniform1i(glGetUniformLocation(mRendererData->shaderProgram, "uTexture"),
 				0);
 
-	glUniform4fv(glGetUniformLocation(mRenderData->shaderProgram, "uColor"), 1,
-				 glm::value_ptr(color));
+	glUniform4fv(glGetUniformLocation(mRendererData->shaderProgram, "uColor"),
+				 1, glm::value_ptr(color));
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLTexture *>(texture.id)->id);
 
-	glBindVertexArray(mRenderData->vao);
+	glBindVertexArray(mRendererData->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
