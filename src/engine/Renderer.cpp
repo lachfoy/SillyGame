@@ -216,7 +216,7 @@ Texture Renderer::createTexture(unsigned char *data, int width, int height)
 	tex->width = width;
 	tex->height = height;
 
-	return {reinterpret_cast<int64_t>(tex), width, height};
+	return {reinterpret_cast<uintptr_t>(tex), width, height};
 }
 
 Texture Renderer::loadTexture(const char *path)
@@ -239,10 +239,11 @@ Texture Renderer::loadTexture(const char *path)
 
 void Renderer::deleteTexture(Texture texture)
 {
+	assert(texture.id != 0);
+
 	GLTexture *tex = reinterpret_cast<GLTexture *>(texture.id);
 
 	glDeleteTextures(1, &tex->id);
-
 	delete tex;
 }
 

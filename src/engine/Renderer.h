@@ -5,7 +5,7 @@
 
 struct Texture
 {
-	int64_t id = 0;
+	uintptr_t id = 0;
 	int width = 0;
 	int height = 0;
 };
@@ -22,7 +22,7 @@ class Renderer
 	Texture createTexture(unsigned char *data, int width, int height);
 	Texture loadTexture(const char *path);
 	void deleteTexture(Texture texture);
-	
+
 	void beginFrame();
 	void endFrame();
 
