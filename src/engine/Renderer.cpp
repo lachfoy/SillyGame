@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include "Engine.h"
+#include "Mesh.h"
 
 #include <glad/glad.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,7 +23,13 @@ struct GLTexture
 	int height;
 };
 
-struct RendererData
+struct GLBuffer
+{
+	GLuint id;
+	size_t size;
+};
+
+struct RendererData // Any renderer specific data
 {
 	GLuint ubo = 0; // Camera ubo
 	GLuint shaderProgram = 0;
@@ -211,7 +218,7 @@ Texture Renderer::createTexture(unsigned char *data, int width, int height)
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	GLTexture *tex = new GLTexture();
+	auto *tex = new GLTexture();
 	tex->id = id;
 	tex->width = width;
 	tex->height = height;
@@ -241,10 +248,79 @@ void Renderer::deleteTexture(Texture texture)
 {
 	assert(texture.id != 0);
 
-	GLTexture *tex = reinterpret_cast<GLTexture *>(texture.id);
+	auto *tex = reinterpret_cast<GLTexture *>(texture.id);
 
 	glDeleteTextures(1, &tex->id);
 	delete tex;
+}
+
+Buffer Renderer::createVertexBuffer(const void *data, size_t size)
+{
+	GLuint glId;
+	glGenBuffers(1, &glId);
+	glBindBuffer(GL_ARRAY_BUFFER, glId);
+	glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	auto *buf = new GLBuffer();
+	buf->id = glId;
+	buf->size = size;
+
+	return {reinterpret_cast<uintptr_t>(buf), size};
+}
+
+Buffer Renderer::createIndexBuffer(const uint32_t *indices, size_t count)
+{
+	GLuint glId;
+	glGenBuffers(1, &glId);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glId);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, count, indices, GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	auto *buf = new GLBuffer();
+	buf->id = glId;
+	buf->size = count;
+
+	return {reinterpret_cast<uintptr_t>(buf), count};
+}
+
+void Renderer::deleteBuffer(Buffer buffer)
+{
+	assert(buffer.id != 0);
+
+	auto *buf = reinterpret_cast<GLBuffer *>(buffer.id);
+
+	glDeleteBuffers(1, &buf->id);
+	delete buf;
+}
+
+uintptr_t Renderer::createVertexArray(Buffer vertexBuffer, Buffer indexBuffer,
+									  const VertexLayout &layout)
+{
+	auto *glVB = reinterpret_cast<GLBuffer *>(vertexBuffer.id);
+	auto *glIB = reinterpret_cast<GLBuffer *>(indexBuffer.id);
+
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, glVB->id);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glIB->id);
+
+	for (const auto &attr : layout.attributes)
+	{
+		glEnableVertexAttribArray(attr.location);
+		glVertexAttribPointer(attr.location, attr.size, GL_FLOAT, GL_FALSE,
+							  layout.stride, (void *)(uintptr_t)attr.offset);
+	}
+
+	glBindVertexArray(0);
+	return (uintptr_t)vao;
+}
+
+void Renderer::deleteVertexArray(uintptr_t vao) {
+	GLuint glVao = (GLuint)vao;
+	glDeleteVertexArrays(1, &glVao);
 }
 
 void Renderer::beginFrame()
@@ -271,6 +347,13 @@ void Renderer::clear(float r, float g, float b)
 {
 	glClearColor(r, g, b, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Renderer::drawMesh(const Mesh &mesh)
+{
+	glBindVertexArray((GLuint)mesh.vao);
+	glDrawElements(GL_TRIANGLES, mesh.indexCount, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
 }
 
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,

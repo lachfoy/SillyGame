@@ -4,6 +4,9 @@
 
 #include "../engine/World.h"
 
+#include "../engine/Renderer.h"
+#include "../engine/Mesh.h"
+
 class Player;
 class Asteroid;
 
@@ -17,4 +20,7 @@ class GameWorld : public World
 
   private:
 	Player *mPlayer = nullptr;
+
+	Mesh quadMesh;
+
 };

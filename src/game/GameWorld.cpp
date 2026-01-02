@@ -61,6 +61,8 @@ void GameWorld::init()
 {
 	mPlayer = createEntity<Player>();
 
+	quadMesh = MeshUtils::createQuadMesh();
+
 #if WITH_EDITOR
 	Engine::instance->editor->registerTool<CameraParams>(&cameraParams);
 #endif
@@ -125,16 +127,18 @@ void GameWorld::update(float dt)
 
 	if (Engine::instance->input->pressed(SDLK_Z))
 	{
-		auto* asteroid = createEntity<Asteroid>();
+		auto *asteroid = createEntity<Asteroid>();
 		asteroid->position = randomPointInCube(glm::vec3(0, 4.5f, 0), 5);
 	}
 }
 
 void GameWorld::render()
 {
-	Engine::instance->renderer->drawQuad(
-		glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
-		glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
+	//Engine::instance->renderer->drawQuad(
+	//	glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
+	//	glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
+
+	Engine::instance->renderer->drawMesh(quadMesh);
 
 	World::render();
 }

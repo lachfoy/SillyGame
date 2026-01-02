@@ -38,6 +38,9 @@
     <ClCompile Include="src\game\Asteroid.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\Mesh.cpp">
+      <Filter>src\engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -88,6 +91,9 @@
       <Filter>src\game</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\EngineDefs.h">
+      <Filter>src\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\Mesh.h">
       <Filter>src\engine</Filter>
     </ClInclude>
   </ItemGroup>
