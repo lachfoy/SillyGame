@@ -14,6 +14,7 @@
 #pragma warning(pop)
 
 #include <iostream>
+#include <unordered_map>
 
 struct GLTexture
 {
@@ -28,6 +29,19 @@ struct RendererData
 	GLuint shaderProgram = 0;
 	GLuint vao = 0;
 	GLuint vbo = 0;
+
+	// mesh cache
+	GLuint meshVAO; // All meshes share a vertex layout
+
+	struct GLMesh
+	{
+		GLuint vbo;
+		GLuint ibo;
+		uint32_t indexCount;
+	};
+
+	std::unordered_map<int64_t, GLMesh> meshes;
+	int64_t nextMeshId = 1;
 };
 
 struct CameraData
@@ -36,6 +50,13 @@ struct CameraData
 	glm::mat4 proj{};
 	glm::vec3 cameraPos{};
 	float _pad0 = 0.0f; // std140 padding
+};
+
+	struct Vertex
+{
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec2 uv;
 };
 
 Texture Renderer::sBlankTexture = {};
@@ -151,6 +172,24 @@ bool Renderer::init()
 
 	glBindVertexArray(0);
 
+	// --- Init mesh pipeline ---------------------------------------------------
+	glGenVertexArrays(1, &mRendererData->meshVAO);
+	glBindVertexArray(mRendererData->meshVAO);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+						  (void *)offsetof(Vertex, position));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+						  (void *)offsetof(Vertex, normal));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+						  (void *)offsetof(Vertex, uv));
+
+	glBindVertexArray(0);
+
 	// --- GL State --------------------------------------------------------
 	glEnable(GL_DEPTH_TEST);
 
@@ -166,6 +205,15 @@ bool Renderer::init()
 
 void Renderer::shutdown()
 {
+	// Manual deleting?
+	for (auto &[id, mesh] : mRendererData->meshes)
+	{
+		glDeleteBuffers(1, &mesh.vbo);
+		glDeleteBuffers(1, &mesh.ibo);
+	}
+
+	glDeleteVertexArrays(1, &mRendererData->meshVAO);
+
 	deleteTexture(sBlankTexture);
 
 	if (mRendererData->vbo != 0)
@@ -247,6 +295,37 @@ void Renderer::deleteTexture(Texture texture)
 	delete tex;
 }
 
+Mesh Renderer::createQuadMesh()
+{
+	std::vector<Vertex> vertices = {
+		{{-1, -1, 0}, {0, 0, 1}, {0, 0}},
+		{{1, -1, 0}, {0, 0, 1}, {1, 0}},
+		{{1, 1, 0}, {0, 0, 1}, {1, 1}},
+		{{-1, 1, 0}, {0, 0, 1}, {0, 1}},
+	};
+
+	std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
+
+	RendererData::GLMesh glMesh{};
+
+	glGenBuffers(1, &glMesh.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex),
+				 vertices.data(), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &glMesh.ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t),
+				 indices.data(), GL_STATIC_DRAW);
+
+	glMesh.indexCount = (uint32_t)indices.size();
+
+	int64_t id = mRendererData->nextMeshId++;
+	mRendererData->meshes[id] = glMesh;
+
+	return {id};
+}
+
 void Renderer::beginFrame()
 {
 	// Update UBO
@@ -271,6 +350,36 @@ void Renderer::clear(float r, float g, float b)
 {
 	glClearColor(r, g, b, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
+{
+	auto it = mRendererData->meshes.find(mesh.id);
+	if (it == mRendererData->meshes.end())
+		return;
+
+	const RendererData::GLMesh &glMesh = it->second;
+
+	glUseProgram(mRendererData->shaderProgram);
+
+	glUniformMatrix4fv(
+		glGetUniformLocation(mRendererData->shaderProgram, "model"), 1,
+		GL_FALSE, glm::value_ptr(transform));
+
+	glUniform1i(glGetUniformLocation(mRendererData->shaderProgram, "uTexture"),
+				0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLTexture *>(texture.id)->id);
+
+	glBindVertexArray(mRendererData->meshVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh.ibo);
+
+	glDrawElements(GL_TRIANGLES, glMesh.indexCount, GL_UNSIGNED_INT, nullptr);
+
+	glBindVertexArray(0);
 }
 
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,

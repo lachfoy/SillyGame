@@ -7,6 +7,8 @@
 class Player;
 class Asteroid;
 
+#include "../engine/Renderer.h" // mesh
+
 class GameWorld : public World
 {
   public:
@@ -17,4 +19,5 @@ class GameWorld : public World
 
   private:
 	Player *mPlayer = nullptr;
+	Mesh mesh;
 };

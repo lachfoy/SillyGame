@@ -10,6 +10,11 @@ struct Texture
 	int height = 0;
 };
 
+struct Mesh
+{
+	int64_t id = 0;
+};
+
 class Renderer
 {
   public:
@@ -23,10 +28,15 @@ class Renderer
 	Texture loadTexture(const char *path);
 	void deleteTexture(Texture texture);
 
+	Mesh createQuadMesh();
+
 	void beginFrame();
 	void endFrame();
 
 	void clear(float r, float g, float b);
+
+	void drawMesh(Mesh mesh, glm::mat4 transform,
+				  Texture texture = sBlankTexture);
 
 	void drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 				  glm::vec4 color, Texture texture = sBlankTexture) const;

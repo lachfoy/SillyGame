@@ -169,7 +169,6 @@
     <ClInclude Include="src\game\GameWorld.h" />
     <ClInclude Include="src\game\Player.h" />
     <ClInclude Include="src\game\ShadowCaster.h" />
-    <ClInclude Include="src\game\Sprite.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
