@@ -15,6 +15,8 @@ struct Mesh
 	int64_t id = 0;
 };
 
+struct RendererImpl;
+
 class Renderer
 {
   public:
@@ -29,19 +31,18 @@ class Renderer
 	void deleteTexture(Texture texture);
 
 	Mesh createQuadMesh();
+	Mesh loadMesh(const char *path);
 
 	void beginFrame();
 	void endFrame();
 
 	void clear(float r, float g, float b);
 
-	void drawMesh(Mesh mesh, glm::mat4 transform,
-				  Texture texture = sBlankTexture);
+	void drawMesh(Mesh mesh, glm::mat4 transform, Texture texture = {});
 
 	void drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
-				  glm::vec4 color, Texture texture = sBlankTexture) const;
+				  glm::vec4 color, Texture texture = {}) const;
 
   private:
-	struct RendererData *mRendererData = nullptr;
-	static Texture sBlankTexture;
+	RendererImpl *mRendererImpl = nullptr;
 };

@@ -5,6 +5,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 #pragma warning(push)
 #pragma warning(disable : 26451)
 #pragma warning(disable : 26819)
@@ -13,6 +16,7 @@
 #include <stb_image.h>
 #pragma warning(pop)
 
+#include <exception>
 #include <iostream>
 #include <unordered_map>
 
@@ -23,22 +27,24 @@ struct GLTexture
 	int height;
 };
 
-struct RendererData
+struct GLMesh
+{
+	GLuint vbo;
+	GLuint ibo;
+	uint32_t indexCount;
+};
+
+struct RendererImpl
 {
 	GLuint ubo = 0; // Camera ubo
 	GLuint shaderProgram = 0;
 	GLuint vao = 0;
 	GLuint vbo = 0;
 
+	GLuint whiteTexture = 0;
+
 	// mesh cache
 	GLuint meshVAO; // All meshes share a vertex layout
-
-	struct GLMesh
-	{
-		GLuint vbo;
-		GLuint ibo;
-		uint32_t indexCount;
-	};
 
 	std::unordered_map<int64_t, GLMesh> meshes;
 	int64_t nextMeshId = 1;
@@ -52,36 +58,35 @@ struct CameraData
 	float _pad0 = 0.0f; // std140 padding
 };
 
-	struct Vertex
+struct Vertex
 {
 	glm::vec3 position;
 	glm::vec3 normal;
 	glm::vec2 uv;
 };
 
-Texture Renderer::sBlankTexture = {};
+Renderer::Renderer() { mRendererImpl = new RendererImpl(); }
 
-Renderer::Renderer() { mRendererData = new RendererData(); }
-
-Renderer::~Renderer() { delete mRendererData; }
+Renderer::~Renderer() { delete mRendererImpl; }
 
 bool Renderer::init()
 {
 	// --- Camera UBO -----------------------------------------------------
-	glGenBuffers(1, &mRendererData->ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, mRendererData->ubo);
+	glGenBuffers(1, &mRendererImpl->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->ubo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr,
 				 GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// Bind the UBO to binding point 0
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRendererData->ubo);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRendererImpl->ubo);
 
 	// --- Shader ---------------------------------------------------------
 	const char *vs = R"(
         #version 460 core
         layout (location = 0) in vec3 aPos;
-        layout (location = 1) in vec2 aTexCoords;
+        layout (location = 1) in vec3 aNormal;
+        layout (location = 2) in vec2 aTexCoords;
 
 		layout(std140) uniform Camera
 		{
@@ -131,18 +136,18 @@ bool Renderer::init()
 	glShaderSource(fragment, 1, &fs, nullptr);
 	glCompileShader(fragment);
 
-	mRendererData->shaderProgram = glCreateProgram();
-	glAttachShader(mRendererData->shaderProgram, vertex);
-	glAttachShader(mRendererData->shaderProgram, fragment);
-	glLinkProgram(mRendererData->shaderProgram);
+	mRendererImpl->shaderProgram = glCreateProgram();
+	glAttachShader(mRendererImpl->shaderProgram, vertex);
+	glAttachShader(mRendererImpl->shaderProgram, fragment);
+	glLinkProgram(mRendererImpl->shaderProgram);
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
 
 	// Set camera UBO
 	GLuint index =
-		glGetUniformBlockIndex(mRendererData->shaderProgram, "Camera");
-	glUniformBlockBinding(mRendererData->shaderProgram, index, 0);
+		glGetUniformBlockIndex(mRendererImpl->shaderProgram, "Camera");
+	glUniformBlockBinding(mRendererImpl->shaderProgram, index, 0);
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
@@ -154,11 +159,11 @@ bool Renderer::init()
 		1.0f,  1.0f,  -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
 	};
 
-	glGenVertexArrays(1, &mRendererData->vao);
-	glGenBuffers(1, &mRendererData->vbo);
+	glGenVertexArrays(1, &mRendererImpl->vao);
+	glGenBuffers(1, &mRendererImpl->vbo);
 
-	glBindVertexArray(mRendererData->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, mRendererData->vbo);
+	glBindVertexArray(mRendererImpl->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, mRendererImpl->vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
 				 GL_STATIC_DRAW);
 
@@ -172,9 +177,10 @@ bool Renderer::init()
 
 	glBindVertexArray(0);
 
-	// --- Init mesh pipeline ---------------------------------------------------
-	glGenVertexArrays(1, &mRendererData->meshVAO);
-	glBindVertexArray(mRendererData->meshVAO);
+	// --- Init mesh pipeline
+	// ---------------------------------------------------
+	glGenVertexArrays(1, &mRendererImpl->meshVAO);
+	glBindVertexArray(mRendererImpl->meshVAO);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -197,8 +203,21 @@ bool Renderer::init()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Blank texture
+	glGenTextures(1, &mRendererImpl->whiteTexture);
+	glBindTexture(GL_TEXTURE_2D, mRendererImpl->whiteTexture);
+
+	// Upload
 	unsigned char data[] = {0xff, 0xff, 0xff, 0xff};
-	sBlankTexture = createTexture(data, 1, 1);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				 data);
+
+	//// Sampler parameters
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return true;
 }
@@ -206,38 +225,42 @@ bool Renderer::init()
 void Renderer::shutdown()
 {
 	// Manual deleting?
-	for (auto &[id, mesh] : mRendererData->meshes)
+	for (auto &[id, mesh] : mRendererImpl->meshes)
 	{
 		glDeleteBuffers(1, &mesh.vbo);
 		glDeleteBuffers(1, &mesh.ibo);
 	}
 
-	glDeleteVertexArrays(1, &mRendererData->meshVAO);
+	glDeleteVertexArrays(1, &mRendererImpl->meshVAO);
 
-	deleteTexture(sBlankTexture);
-
-	if (mRendererData->vbo != 0)
+	if (mRendererImpl->whiteTexture != 0)
 	{
-		glDeleteBuffers(1, &mRendererData->vbo);
-		mRendererData->vbo = 0;
+		glDeleteTextures(1, &mRendererImpl->whiteTexture);
+		mRendererImpl->whiteTexture = 0;
 	}
 
-	if (mRendererData->vao != 0)
+	if (mRendererImpl->vbo != 0)
 	{
-		glDeleteVertexArrays(1, &mRendererData->vao);
-		mRendererData->vao = 0;
+		glDeleteBuffers(1, &mRendererImpl->vbo);
+		mRendererImpl->vbo = 0;
 	}
 
-	if (mRendererData->shaderProgram != 0)
+	if (mRendererImpl->vao != 0)
 	{
-		glDeleteProgram(mRendererData->shaderProgram);
-		mRendererData->shaderProgram = 0;
+		glDeleteVertexArrays(1, &mRendererImpl->vao);
+		mRendererImpl->vao = 0;
 	}
 
-	if (mRendererData->ubo != 0)
+	if (mRendererImpl->shaderProgram != 0)
 	{
-		glDeleteBuffers(1, &mRendererData->ubo);
-		mRendererData->ubo = 0;
+		glDeleteProgram(mRendererImpl->shaderProgram);
+		mRendererImpl->shaderProgram = 0;
+	}
+
+	if (mRendererImpl->ubo != 0)
+	{
+		glDeleteBuffers(1, &mRendererImpl->ubo);
+		mRendererImpl->ubo = 0;
 	}
 }
 
@@ -306,7 +329,7 @@ Mesh Renderer::createQuadMesh()
 
 	std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
-	RendererData::GLMesh glMesh{};
+	GLMesh glMesh{};
 
 	glGenBuffers(1, &glMesh.vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
@@ -320,8 +343,136 @@ Mesh Renderer::createQuadMesh()
 
 	glMesh.indexCount = (uint32_t)indices.size();
 
-	int64_t id = mRendererData->nextMeshId++;
-	mRendererData->meshes[id] = glMesh;
+	int64_t id = mRendererImpl->nextMeshId++;
+	mRendererImpl->meshes[id] = glMesh;
+
+	return {id};
+}
+
+Mesh Renderer::loadMesh(const char *path)
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+
+	std::string err;
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, nullptr, &err, path);
+
+	if (!err.empty())
+	{
+		std::cerr << err << std::endl;
+	}
+
+	if (!ret)
+	{
+		std::stringstream ss;
+		ss << "Failed to load " << path;
+		throw std::runtime_error(ss.str());
+	}
+
+	struct IndexKey
+	{
+		int v;
+		int n;
+		int t;
+
+		bool operator<(const IndexKey &other) const
+		{
+			if (v != other.v)
+				return v < other.v;
+			if (n != other.n)
+				return n < other.n;
+			return t < other.t;
+		}
+	};
+
+	std::map<IndexKey, uint32_t> indexMap;
+
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
+	if (shapes.size() > 1)
+	{
+		throw std::runtime_error("Right now only 1 shape is handled.");
+	}
+
+	for (const auto &shape : shapes)
+	{
+		for (const auto &idx : shape.mesh.indices)
+		{
+			IndexKey key{idx.vertex_index, idx.normal_index,
+						 idx.texcoord_index};
+
+			auto it = indexMap.find(key);
+			if (it == indexMap.end())
+			{
+				Vertex v{};
+
+				v.position[0] = attrib.vertices[3 * idx.vertex_index + 0];
+				v.position[1] = attrib.vertices[3 * idx.vertex_index + 1];
+				v.position[2] = attrib.vertices[3 * idx.vertex_index + 2];
+
+				if (idx.normal_index >= 0)
+				{
+					v.normal[0] = attrib.normals[3 * idx.normal_index + 0];
+					v.normal[1] = attrib.normals[3 * idx.normal_index + 1];
+					v.normal[2] = attrib.normals[3 * idx.normal_index + 2];
+				}
+
+				if (idx.texcoord_index >= 0)
+				{
+					v.uv[0] = attrib.texcoords[2 * idx.texcoord_index + 0];
+					v.uv[1] =
+						1.0f - attrib.texcoords[2 * idx.texcoord_index + 1];
+				}
+
+				uint32_t newIndex = static_cast<uint32_t>(vertices.size());
+				vertices.push_back(v);
+				indexMap[key] = newIndex;
+				indices.push_back(newIndex);
+			}
+			else
+			{
+				indices.push_back(it->second);
+			}
+		}
+	}
+
+	GLMesh glMesh{};
+
+	glGenBuffers(1, &glMesh.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex),
+				 vertices.data(), GL_STATIC_DRAW);
+
+	glGenBuffers(1, &glMesh.ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh.ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t),
+				 indices.data(), GL_STATIC_DRAW);
+
+	glMesh.indexCount = (uint32_t)indices.size();
+
+	int64_t id = mRendererImpl->nextMeshId++;
+	mRendererImpl->meshes[id] = glMesh;
+
+	// This must be done while the mesh VBO is bound!!! That was the error here
+	// There is a better way though. We should move to a pipeline that actually
+	// binds vertex descriptions
+	glBindVertexArray(mRendererImpl->meshVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+						  (void *)offsetof(Vertex, position));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+						  (void *)offsetof(Vertex, normal));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+						  (void *)offsetof(Vertex, uv));
+
+	glBindVertexArray(0);
 
 	return {id};
 }
@@ -336,7 +487,7 @@ void Renderer::beginFrame()
 		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 
-	glBindBuffer(GL_UNIFORM_BUFFER, mRendererData->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->ubo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -354,29 +505,30 @@ void Renderer::clear(float r, float g, float b)
 
 void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
 {
-	auto it = mRendererData->meshes.find(mesh.id);
-	if (it == mRendererData->meshes.end())
+	auto it = mRendererImpl->meshes.find(mesh.id);
+	if (it == mRendererImpl->meshes.end())
 		return;
 
-	const RendererData::GLMesh &glMesh = it->second;
+	const GLMesh &glMesh = it->second;
 
-	glUseProgram(mRendererData->shaderProgram);
+	glUseProgram(mRendererImpl->shaderProgram);
 
 	glUniformMatrix4fv(
-		glGetUniformLocation(mRendererData->shaderProgram, "model"), 1,
+		glGetUniformLocation(mRendererImpl->shaderProgram, "model"), 1,
 		GL_FALSE, glm::value_ptr(transform));
 
-	glUniform1i(glGetUniformLocation(mRendererData->shaderProgram, "uTexture"),
+	glUniform1i(glGetUniformLocation(mRendererImpl->shaderProgram, "uTexture"),
 				0);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLTexture *>(texture.id)->id);
+	glBindTexture(GL_TEXTURE_2D,
+				  texture.id != 0
+					  ? reinterpret_cast<GLTexture *>(texture.id)->id
+					  : mRendererImpl->whiteTexture);
 
-	glBindVertexArray(mRendererData->meshVAO);
+	glBindVertexArray(mRendererImpl->meshVAO);
 
-	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh.ibo);
-
 	glDrawElements(GL_TRIANGLES, glMesh.indexCount, GL_UNSIGNED_INT, nullptr);
 
 	glBindVertexArray(0);
@@ -385,7 +537,7 @@ void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 						glm::vec4 color, Texture texture) const
 {
-	glUseProgram(mRendererData->shaderProgram);
+	glUseProgram(mRendererImpl->shaderProgram);
 
 	glm::mat4 model = glm::mat4(1.0f);
 
@@ -401,18 +553,23 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 	model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
 
 	glUniformMatrix4fv(
-		glGetUniformLocation(mRendererData->shaderProgram, "model"), 1,
+		glGetUniformLocation(mRendererImpl->shaderProgram, "model"), 1,
 		GL_FALSE, glm::value_ptr(model));
 
-	glUniform1i(glGetUniformLocation(mRendererData->shaderProgram, "uTexture"),
+	glUniform1i(glGetUniformLocation(mRendererImpl->shaderProgram, "uTexture"),
 				0);
 
-	glUniform4fv(glGetUniformLocation(mRendererData->shaderProgram, "uColor"),
+	glUniform4fv(glGetUniformLocation(mRendererImpl->shaderProgram, "uColor"),
 				 1, glm::value_ptr(color));
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, reinterpret_cast<GLTexture *>(texture.id)->id);
+	glBindTexture(GL_TEXTURE_2D,
+				  texture.id != 0
+					  ? reinterpret_cast<GLTexture *>(texture.id)->id
+					  : mRendererImpl->whiteTexture);
 
-	glBindVertexArray(mRendererData->vao);
+	glBindBuffer(GL_ARRAY_BUFFER, mRendererImpl->vbo);
+
+	glBindVertexArray(mRendererImpl->vao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
