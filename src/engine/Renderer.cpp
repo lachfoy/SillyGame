@@ -99,10 +99,27 @@ bool Renderer::init()
         uniform mat4 model;
 
         out vec2 texCoords;
+		out vec4 vertexColor;
+
+		vec3 lightPos = vec3(0.0, 10.0, -10.0);
+		vec3 ambientLight = vec3(0.1, 0.1, 0.1);
 
         void main()
         {
+			vec3 worldPos = vec3(model * vec4(aPos, 1.0));
+
+			mat3 normalMatrix = transpose(inverse(mat3(model)));
+			vec3 norm = normalize(normalMatrix * aNormal);
+
+			vec3 lightDir = normalize(lightPos - worldPos);
+			float diff = max(dot(norm, lightDir), 0.0);
+
+			vec3 diffuse = diff * vec3(1.0);
+
+            vertexColor = vec4(ambientLight + diffuse, 1.0);
+
 			texCoords = aTexCoords;
+
             gl_Position = uProj * uView * model * vec4(aPos, 1.0);
         }
     )";
@@ -111,6 +128,7 @@ bool Renderer::init()
         #version 460 core
 
         in vec2 texCoords;
+        in vec4 vertexColor;
 
 		uniform sampler2D uTexture;
 		uniform vec4 uColor;
@@ -124,7 +142,7 @@ bool Renderer::init()
 			if (texColor.a < 0.5)
 				discard;
 
-            FragColor = texColor * uColor;
+            FragColor = texColor * uColor * vertexColor;
         }
     )";
 
@@ -363,6 +381,11 @@ Mesh Renderer::loadMesh(const char *path)
 		throw std::runtime_error(ss.str());
 	}
 
+	if (shapes.size() > 1)
+	{
+		throw std::runtime_error("Right now only 1 shape is handled.");
+	}
+
 	struct IndexKey
 	{
 		int v;
@@ -383,11 +406,6 @@ Mesh Renderer::loadMesh(const char *path)
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
-
-	if (shapes.size() > 1)
-	{
-		throw std::runtime_error("Right now only 1 shape is handled.");
-	}
 
 	for (const auto &shape : shapes)
 	{
