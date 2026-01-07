@@ -29,6 +29,13 @@ struct Camera_params
 	float verticalSpeedDamping = 0.5f;
 };
 
+struct Lighting_params
+{
+	glm::vec3 lightPos = {0, 10, -10};
+	glm::vec3 lightColor = {1, 1, 1};
+	glm::vec3 ambient = {0.1, 0.1, 0.1};
+};
+
 #if WITH_EDITOR
 #include <imgui.h>
 struct CameraParams : public EditorTool
@@ -45,7 +52,6 @@ struct CameraParams : public EditorTool
 		ImGui::SliderFloat("followSpeed", &params->followSpeed, 1.f, 10.f);
 		ImGui::SliderFloat("cameraHeight", &params->cameraHeight, 0.f, 8.8f);
 		ImGui::SliderFloat("playerHeight", &params->playerHeight, 0.f, 8.8f);
-		// ImGui::SliderFloat("pitchSpeed", &params->pitchSpeed, 0.5f, 3.f);
 		ImGui::SliderFloat("verticalSpeedDamping",
 						   &params->verticalSpeedDamping, 0.0f, 1.f);
 	}
@@ -53,17 +59,7 @@ struct CameraParams : public EditorTool
   private:
 	Camera_params *params;
 };
-#endif
 
-struct Lighting_params
-{
-	glm::vec3 lightPos = {0, 10, -10};
-	glm::vec3 lightColor = {1, 1, 1};
-	glm::vec3 ambient = {0.1, 0.1, 0.1};
-};
-
-#if WITH_EDITOR
-#include <imgui.h>
 struct LightingParams : public EditorTool
 {
 	LightingParams(Lighting_params *_params)
@@ -91,7 +87,7 @@ void GameWorld::init()
 	mPlayer = createEntity<Player>();
 
 	// mesh = Engine::instance->renderer->createQuadMesh();
-	mesh = Engine::instance->renderer->loadMesh("gamedata/Icosphere.obj");
+	mesh = Engine::instance->renderer->loadMesh("gamedata/Suzanne.obj");
 
 #if WITH_EDITOR
 	Engine::instance->editor->registerTool<CameraParams>(&cameraParams);
@@ -146,16 +142,6 @@ void GameWorld::update(float dt)
 	cam->position.z = glm::mix(cam->position.z, desiredPos.z,
 							   1.0f - exp(-cameraParams.followSpeed * dt));
 
-// Calculate look-at only affecting pitch
-// Not sure if I want this at all
-#if 0
-	glm::vec3 d = center - cam->position;
-	float distXZ = glm::sqrt(d.x * d.x + d.z * d.z);
-	float desiredPitch = glm::degrees(atan2(d.y, distXZ));
-	cam->rotation.x = glm::mix(cam->rotation.x, desiredPitch,
-							   1.0f - exp(-cameraParams.pitchSpeed * dt));
-#endif
-
 	if (Engine::instance->input->pressed(SDLK_Z))
 	{
 		auto *asteroid = createEntity<Asteroid>();
@@ -169,9 +155,9 @@ void GameWorld::update(float dt)
 
 void GameWorld::render()
 {
-	// Engine::instance->renderer->drawQuad(
-	//	glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
-	//	glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
+	 Engine::instance->renderer->drawQuad(
+		glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
+		glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
 
 	Engine::instance->renderer->drawMesh(mesh, glm::mat4(1.0f));
 

@@ -34,6 +34,7 @@ struct GLTexture
 
 struct GLMesh
 {
+	GLuint vao;
 	GLuint vbo;
 	GLuint ibo;
 	uint32_t indexCount;
@@ -41,17 +42,16 @@ struct GLMesh
 
 struct RendererImpl
 {
-	GLuint ubo = 0; // Camera ubo
+	GLuint cameraUbo = 0;
 	GLuint lightingUbo = 0;
 	GLuint shaderProgram = 0;
-	GLuint vao = 0;
-	GLuint vbo = 0;
 
 	GLuint whiteTexture = 0;
 
-	// mesh cache
-	GLuint meshVAO; // All meshes share a vertex layout
+	GLuint quadVao = 0;
+	GLuint quadVbo = 0;
 
+	// mesh cache
 	std::unordered_map<int64_t, GLMesh> meshes;
 	int64_t nextMeshId = 1;
 };
@@ -88,13 +88,13 @@ Renderer::~Renderer() { delete mRendererImpl; }
 bool Renderer::init()
 {
 	// --- Camera UBO -----------------------------------------------------
-	glGenBuffers(1, &mRendererImpl->ubo);
-	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->ubo);
+	glGenBuffers(1, &mRendererImpl->cameraUbo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->cameraUbo);
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(CameraData), nullptr,
 				 GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRendererImpl->ubo);
+	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRendererImpl->cameraUbo);
 
 	// Lighting ubo
 	glGenBuffers(1, &mRendererImpl->lightingUbo);
@@ -202,37 +202,26 @@ bool Renderer::init()
 	glUniformBlockBinding(mRendererImpl->shaderProgram, lightingBlockIndex, 1);
 
 	// --- Quad Geometry ---------------------------------------------------
-	float quadVertices[] = {
-		// pos        // uv
-		-0.5f, -0.5f, 0.0f,	 0.0f, 0.0f, 0.5f, -0.5f, 0.0f,
-		1.0f,  0.0f,  0.5f,	 0.5f, 0.0f, 1.0f, 1.0f,
-
-		-0.5f, -0.5f, 0.0f,	 0.0f, 0.0f, 0.5f, 0.5f,  0.0f,
-		1.0f,  1.0f,  -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
+	// clang-format off
+	std::vector<Vertex> quadVertices = {
+		// pos				      // normal		         // uv
+		{{-0.5f, -0.5f, 0.0f},    {0.0f, 0.0f, 1.0f},    {0.0f, 0.0f}},
+		{{ 0.5f, -0.5f, 0.0f},    {0.0f, 0.0f, 1.0f},    {1.0f, 0.0f}},
+		{{ 0.5f,  0.5f, 0.0f},    {0.0f, 0.0f, 1.0f},    {1.0f, 1.0f}},
+		{{-0.5f, -0.5f, 0.0f},    {0.0f, 0.0f, 1.0f},    {0.0f, 0.0f}},
+		{{ 0.5f,  0.5f, 0.0f},    {0.0f, 0.0f, 1.0f},    {1.0f, 1.0f}},
+		{{-0.5f,  0.5f, 0.0f},    {0.0f, 0.0f, 1.0f},    {0.0f, 1.0f}}
 	};
+	// clang-format on
 
-	glGenVertexArrays(1, &mRendererImpl->vao);
-	glGenBuffers(1, &mRendererImpl->vbo);
+	glGenBuffers(1, &mRendererImpl->quadVbo);
 
-	glBindVertexArray(mRendererImpl->vao);
-	glBindBuffer(GL_ARRAY_BUFFER, mRendererImpl->vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices,
-				 GL_STATIC_DRAW);
+	glGenVertexArrays(1, &mRendererImpl->quadVao);
+	glBindVertexArray(mRendererImpl->quadVao);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-						  (void *)0);
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-						  (void *)(3 * sizeof(float)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);
-
-	// --- Init mesh pipeline
-	// ---------------------------------------------------
-	glGenVertexArrays(1, &mRendererImpl->meshVAO);
-	glBindVertexArray(mRendererImpl->meshVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, mRendererImpl->quadVbo);
+	glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(Vertex),
+				 quadVertices.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -272,11 +261,12 @@ void Renderer::shutdown() noexcept
 	// Manual deleting?
 	for (auto &[id, mesh] : mRendererImpl->meshes)
 	{
+		glDeleteVertexArrays(1, &mesh.vao);
 		glDeleteBuffers(1, &mesh.vbo);
 		glDeleteBuffers(1, &mesh.ibo);
 	}
 
-	glDeleteVertexArrays(1, &mRendererImpl->meshVAO);
+	glDeleteVertexArrays(1, &mRendererImpl->quadVao);
 
 	if (mRendererImpl->whiteTexture != 0)
 	{
@@ -284,16 +274,10 @@ void Renderer::shutdown() noexcept
 		mRendererImpl->whiteTexture = 0;
 	}
 
-	if (mRendererImpl->vbo != 0)
+	if (mRendererImpl->quadVbo != 0)
 	{
-		glDeleteBuffers(1, &mRendererImpl->vbo);
-		mRendererImpl->vbo = 0;
-	}
-
-	if (mRendererImpl->vao != 0)
-	{
-		glDeleteVertexArrays(1, &mRendererImpl->vao);
-		mRendererImpl->vao = 0;
+		glDeleteBuffers(1, &mRendererImpl->quadVbo);
+		mRendererImpl->quadVbo = 0;
 	}
 
 	if (mRendererImpl->shaderProgram != 0)
@@ -308,10 +292,10 @@ void Renderer::shutdown() noexcept
 		mRendererImpl->lightingUbo = 0;
 	}
 
-	if (mRendererImpl->ubo != 0)
+	if (mRendererImpl->cameraUbo != 0)
 	{
-		glDeleteBuffers(1, &mRendererImpl->ubo);
-		mRendererImpl->ubo = 0;
+		glDeleteBuffers(1, &mRendererImpl->cameraUbo);
+		mRendererImpl->cameraUbo = 0;
 	}
 }
 
@@ -372,6 +356,8 @@ void Renderer::deleteTexture(Texture texture)
 
 Mesh Renderer::createQuadMesh()
 {
+	assert(false); // DO NOT TRY AND USE, this is broken
+
 	std::vector<Vertex> vertices = {
 		{{-1, -1, 0}, {0, 0, 1}, {0, 0}},
 		{{1, -1, 0}, {0, 0, 1}, {1, 0}},
@@ -492,25 +478,18 @@ Mesh Renderer::loadMesh(const char *path)
 	GLMesh glMesh{};
 
 	glGenBuffers(1, &glMesh.vbo);
+	glGenBuffers(1, &glMesh.ibo);
+
+	glGenVertexArrays(1, &glMesh.vao);
+	glBindVertexArray(glMesh.vao);
+
 	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex),
 				 vertices.data(), GL_STATIC_DRAW);
 
-	glGenBuffers(1, &glMesh.ibo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh.ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t),
 				 indices.data(), GL_STATIC_DRAW);
-
-	glMesh.indexCount = (uint32_t)indices.size();
-
-	int64_t id = mRendererImpl->nextMeshId++;
-	mRendererImpl->meshes[id] = glMesh;
-
-	// This must be done while the mesh VBO is bound!!! That was the error here
-	// There is a better way though. We should move to a pipeline that actually
-	// binds vertex descriptions
-	glBindVertexArray(mRendererImpl->meshVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, glMesh.vbo);
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -526,6 +505,11 @@ Mesh Renderer::loadMesh(const char *path)
 
 	glBindVertexArray(0);
 
+	glMesh.indexCount = static_cast<uint32_t>(indices.size());
+
+	int64_t id = mRendererImpl->nextMeshId++;
+	mRendererImpl->meshes[id] = glMesh;
+
 	return {id};
 }
 
@@ -539,7 +523,7 @@ void Renderer::beginFrame()
 		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 
-	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->ubo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->cameraUbo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 }
@@ -594,11 +578,8 @@ void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
 					  ? reinterpret_cast<GLTexture *>(texture.id)->id
 					  : mRendererImpl->whiteTexture);
 
-	glBindVertexArray(mRendererImpl->meshVAO);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, glMesh.ibo);
+	glBindVertexArray(glMesh.vao);
 	glDrawElements(GL_TRIANGLES, glMesh.indexCount, GL_UNSIGNED_INT, nullptr);
-
 	glBindVertexArray(0);
 }
 
@@ -636,8 +617,7 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 					  ? reinterpret_cast<GLTexture *>(texture.id)->id
 					  : mRendererImpl->whiteTexture);
 
-	glBindBuffer(GL_ARRAY_BUFFER, mRendererImpl->vbo);
-
-	glBindVertexArray(mRendererImpl->vao);
+	glBindVertexArray(mRendererImpl->quadVao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
 }
