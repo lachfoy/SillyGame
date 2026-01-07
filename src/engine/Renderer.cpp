@@ -5,8 +5,13 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#pragma warning(push)
+#pragma warning(disable : 26495)
+#pragma warning(disable : 6262)
+#pragma warning(disable : 6054)
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+#pragma warning(pop)
 
 #pragma warning(push)
 #pragma warning(disable : 26451)
