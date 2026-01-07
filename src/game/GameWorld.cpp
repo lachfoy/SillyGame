@@ -55,17 +55,47 @@ struct CameraParams : public EditorTool
 };
 #endif
 
+struct Lighting_params
+{
+	glm::vec3 lightPos = {0, 10, -10};
+	glm::vec3 lightColor = {1, 1, 1};
+	glm::vec3 ambient = {0.1, 0.1, 0.1};
+};
+
+#if WITH_EDITOR
+#include <imgui.h>
+struct LightingParams : public EditorTool
+{
+	LightingParams(Lighting_params *_params)
+		: EditorTool("LightingParams"), params(_params)
+	{
+	}
+
+	void draw() override
+	{
+		ImGui::DragFloat3("lightPos", &params->lightPos[0], 0.1f);
+		ImGui::ColorEdit3("lightColor", &params->lightColor[0]);
+		ImGui::ColorEdit3("ambient", &params->ambient[0]);
+	}
+
+  private:
+	Lighting_params *params;
+};
+#endif
+
 Camera_params cameraParams;
+Lighting_params lightingParams;
 
 void GameWorld::init()
 {
 	mPlayer = createEntity<Player>();
 
-	//mesh = Engine::instance->renderer->createQuadMesh();
+	// mesh = Engine::instance->renderer->createQuadMesh();
 	mesh = Engine::instance->renderer->loadMesh("gamedata/Icosphere.obj");
 
 #if WITH_EDITOR
 	Engine::instance->editor->registerTool<CameraParams>(&cameraParams);
+	Engine::instance->editor->registerTool<LightingParams>(&lightingParams);
 #endif
 }
 
@@ -128,14 +158,18 @@ void GameWorld::update(float dt)
 
 	if (Engine::instance->input->pressed(SDLK_Z))
 	{
-		auto* asteroid = createEntity<Asteroid>();
+		auto *asteroid = createEntity<Asteroid>();
 		asteroid->position = randomPointInCube(glm::vec3(0, 4.5f, 0), 5);
 	}
+
+	Engine::instance->renderer->setLighting(lightingParams.lightPos,
+											lightingParams.lightColor,
+											lightingParams.ambient);
 }
 
 void GameWorld::render()
 {
-	//Engine::instance->renderer->drawQuad(
+	// Engine::instance->renderer->drawQuad(
 	//	glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
 	//	glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
 

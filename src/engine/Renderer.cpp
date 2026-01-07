@@ -42,6 +42,7 @@ struct GLMesh
 struct RendererImpl
 {
 	GLuint ubo = 0; // Camera ubo
+	GLuint lightingUbo = 0;
 	GLuint shaderProgram = 0;
 	GLuint vao = 0;
 	GLuint vbo = 0;
@@ -55,12 +56,22 @@ struct RendererImpl
 	int64_t nextMeshId = 1;
 };
 
-struct CameraData
+struct alignas(16) CameraData
 {
-	glm::mat4 view{};
-	glm::mat4 proj{};
-	glm::vec3 cameraPos{};
-	float _pad0 = 0.0f; // std140 padding
+	glm::mat4 view;
+	glm::mat4 proj;
+	glm::vec3 cameraPos;
+	float _pad0;
+};
+
+struct alignas(16) LightingData
+{
+	glm::vec3 lightPos;
+	float _pad0;
+	glm::vec3 lightColor;
+	float _pad1;
+	glm::vec3 ambient;
+	float _pad2;
 };
 
 struct Vertex
@@ -83,8 +94,16 @@ bool Renderer::init()
 				 GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	// Bind the UBO to binding point 0
 	glBindBufferBase(GL_UNIFORM_BUFFER, 0, mRendererImpl->ubo);
+
+	// Lighting ubo
+	glGenBuffers(1, &mRendererImpl->lightingUbo);
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->lightingUbo);
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightingData), nullptr,
+				 GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	glBindBufferBase(GL_UNIFORM_BUFFER, 1, mRendererImpl->lightingUbo);
 
 	// --- Shader ---------------------------------------------------------
 	const char *vs = R"(
@@ -93,7 +112,7 @@ bool Renderer::init()
         layout (location = 1) in vec3 aNormal;
         layout (location = 2) in vec2 aTexCoords;
 
-		layout(std140) uniform Camera
+		layout(std140, binding = 0) uniform Camera
 		{
 			mat4 uView;
 			mat4 uProj;
@@ -101,13 +120,20 @@ bool Renderer::init()
 			float _pad0;
 		};
 
+		layout(std140, binding = 1) uniform Lighting
+		{
+			vec3 lightPos;
+			float _pad1;
+			vec3 lightColor;
+			float _pad2;
+			vec3 ambient;
+			float _pad3;
+		};
+
         uniform mat4 model;
 
         out vec2 texCoords;
 		out vec4 vertexColor;
-
-		vec3 lightPos = vec3(0.0, 10.0, -10.0);
-		vec3 ambientLight = vec3(0.1, 0.1, 0.1);
 
         void main()
         {
@@ -119,9 +145,9 @@ bool Renderer::init()
 			vec3 lightDir = normalize(lightPos - worldPos);
 			float diff = max(dot(norm, lightDir), 0.0);
 
-			vec3 diffuse = diff * vec3(1.0);
+			vec3 diffuse = diff * lightColor;
 
-            vertexColor = vec4(ambientLight + diffuse, 1.0);
+            vertexColor = vec4(diffuse + ambient, 1.0);
 
 			texCoords = aTexCoords;
 
@@ -168,9 +194,12 @@ bool Renderer::init()
 	glDeleteShader(fragment);
 
 	// Set camera UBO
-	GLuint index =
+	GLuint cameraBlockIndex =
 		glGetUniformBlockIndex(mRendererImpl->shaderProgram, "Camera");
-	glUniformBlockBinding(mRendererImpl->shaderProgram, index, 0);
+	glUniformBlockBinding(mRendererImpl->shaderProgram, cameraBlockIndex, 0);
+	GLuint lightingBlockIndex =
+		glGetUniformBlockIndex(mRendererImpl->shaderProgram, "Lighting");
+	glUniformBlockBinding(mRendererImpl->shaderProgram, lightingBlockIndex, 1);
 
 	// --- Quad Geometry ---------------------------------------------------
 	float quadVertices[] = {
@@ -271,6 +300,12 @@ void Renderer::shutdown() noexcept
 	{
 		glDeleteProgram(mRendererImpl->shaderProgram);
 		mRendererImpl->shaderProgram = 0;
+	}
+
+	if (mRendererImpl->lightingUbo != 0)
+	{
+		glDeleteBuffers(1, &mRendererImpl->lightingUbo);
+		mRendererImpl->lightingUbo = 0;
 	}
 
 	if (mRendererImpl->ubo != 0)
@@ -520,6 +555,19 @@ void Renderer::clear(float r, float g, float b)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
+void Renderer::setLighting(glm::vec3 lightPos, glm::vec3 lightColor,
+						   glm::vec3 ambient)
+{
+	LightingData data;
+	data.lightPos = lightPos;
+	data.lightColor = lightColor;
+	data.ambient = ambient;
+
+	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->lightingUbo);
+	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(LightingData), &data);
+	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
 void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
 {
 	auto it = mRendererImpl->meshes.find(mesh.id);
@@ -536,6 +584,9 @@ void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
 
 	glUniform1i(glGetUniformLocation(mRendererImpl->shaderProgram, "uTexture"),
 				0);
+
+	glUniform4f(glGetUniformLocation(mRendererImpl->shaderProgram, "uColor"), 1,
+				1, 1, 1);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D,

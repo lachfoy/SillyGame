@@ -38,6 +38,9 @@ class Renderer
 
 	void clear(float r, float g, float b);
 
+	void setLighting(glm::vec3 lightPos, glm::vec3 lightColor,
+					 glm::vec3 ambient);
+
 	void drawMesh(Mesh mesh, glm::mat4 transform, Texture texture = {});
 
 	void drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
