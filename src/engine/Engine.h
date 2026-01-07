@@ -14,11 +14,10 @@
 struct Engine
 {
 	Engine() { instance = this; }
-	~Engine() { instance = nullptr; }
+	~Engine();
 
 	bool init();
-	void shutdown();
-
+	
 	void setWorld(std::unique_ptr<World> world);
 
 	SDL_Window *window = nullptr;

@@ -12,7 +12,7 @@ class World
 	virtual ~World() {}
 
 	virtual void init() {}
-	virtual void shutdown() { mEntities.clear(); }
+	virtual void shutdown() noexcept {}
 
 	template <typename T, typename... Args> T *createEntity(Args &&...args)
 	{

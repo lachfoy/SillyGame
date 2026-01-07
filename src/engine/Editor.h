@@ -20,7 +20,7 @@ class Editor
 {
   public:
 	void init(SDL_Window *window, SDL_GLContext glContext);
-	void shutdown();
+	void shutdown() noexcept;
 
 	template <typename T, typename... Args> void registerTool(Args &&...args)
 	{

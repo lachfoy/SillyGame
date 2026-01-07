@@ -10,7 +10,6 @@ Player::Player()
 Player::~Player()
 {
 	Engine::instance->renderer->deleteTexture(texture);
-	
 }
 
 void Player::update(float dt)

@@ -24,7 +24,7 @@ class Renderer
 	~Renderer();
 
 	bool init();
-	void shutdown();
+	void shutdown() noexcept;
 
 	Texture createTexture(unsigned char *data, int width, int height);
 	Texture loadTexture(const char *path);

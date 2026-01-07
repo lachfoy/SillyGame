@@ -20,7 +20,7 @@ void Editor::init(SDL_Window *window, SDL_GLContext glContext)
 	ImGui_ImplOpenGL3_Init("#version 460");
 }
 
-void Editor::shutdown()
+void Editor::shutdown() noexcept
 {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplSDL3_Shutdown();

@@ -202,27 +202,20 @@ bool Renderer::init()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	// Blank texture
+	// White texture to use for shaders if a texture is not specified
 	glGenTextures(1, &mRendererImpl->whiteTexture);
 	glBindTexture(GL_TEXTURE_2D, mRendererImpl->whiteTexture);
 
-	// Upload
 	unsigned char data[] = {0xff, 0xff, 0xff, 0xff};
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
 				 data);
-
-	//// Sampler parameters
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	return true;
 }
 
-void Renderer::shutdown()
+void Renderer::shutdown() noexcept
 {
 	// Manual deleting?
 	for (auto &[id, mesh] : mRendererImpl->meshes)
@@ -298,8 +291,9 @@ Texture Renderer::loadTexture(const char *path)
 
 	if (!data)
 	{
-		std::cerr << "Failed to load image: " << path << std::endl;
-		return {};
+		std::stringstream ss;
+		ss << "Failed to load " << path;
+		throw std::runtime_error(ss.str());
 	}
 
 	Texture tex = createTexture(data, w, h);

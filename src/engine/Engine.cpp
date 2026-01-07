@@ -6,6 +6,42 @@
 
 Engine *Engine::instance = nullptr;
 
+Engine::~Engine()
+{
+	if (world)
+	{
+		world->shutdown();
+		world.reset();
+	}
+
+	renderer->shutdown();
+	renderer.reset();
+
+	camera.reset();
+	input.reset();
+
+#if WITH_EDITOR
+	editor->shutdown();
+	editor.reset();
+#endif
+
+	if (glContext)
+	{
+		SDL_GL_DestroyContext(glContext);
+		glContext = nullptr;
+	}
+
+	if (window)
+	{
+		SDL_DestroyWindow(window);
+		window = nullptr;
+	}
+
+	SDL_Quit();
+
+	instance = nullptr;
+}
+
 bool Engine::init()
 {
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
@@ -55,40 +91,6 @@ bool Engine::init()
 	renderer->init();
 
 	return true;
-}
-
-void Engine::shutdown()
-{
-	if (world)
-	{
-		world->shutdown();
-		world.reset();
-	}
-
-	renderer->shutdown();
-	renderer.reset();
-
-	camera.reset();
-	input.reset();
-
-#if WITH_EDITOR
-	editor->shutdown();
-	editor.reset();
-#endif
-
-	if (glContext)
-	{
-		SDL_GL_DestroyContext(glContext);
-		glContext = nullptr;
-	}
-
-	if (window)
-	{
-		SDL_DestroyWindow(window);
-		window = nullptr;
-	}
-
-	SDL_Quit();
 }
 
 void Engine::setWorld(std::unique_ptr<World> _world)
