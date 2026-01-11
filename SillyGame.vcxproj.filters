@@ -87,5 +87,8 @@
     <ClInclude Include="src\engine\EngineDefs.h">
       <Filter>src\engine</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\SerializableParams.h">
+      <Filter>src\engine</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

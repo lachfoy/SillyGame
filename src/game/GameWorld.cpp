@@ -4,6 +4,9 @@
 #include "Asteroid.h"
 #include "Player.h"
 
+#include "../engine/SerializableParams.h"
+#include <fstream>
+
 inline float rand01()
 {
 	return static_cast<float>(rand()) / (static_cast<float>(RAND_MAX) + 1.0f);
@@ -18,22 +21,38 @@ static glm::vec3 randomPointInCube(glm::vec3 center, float size)
 					 center.z + (rand01() * 2.0f - 1.0f) * h);
 }
 
-struct Camera_params
+struct Camera_params : public SerializableParams
 {
+	Camera_params()
+	{
+		REGISTER_PROP(baseDistance);
+		REGISTER_PROP(zoomFactor);
+		REGISTER_PROP(followSpeed);
+		REGISTER_PROP(cameraHeight);
+		REGISTER_PROP(playerHeight);
+		REGISTER_PROP(verticalSpeedDamping);
+	}
+
 	float baseDistance = 7.5f;
 	float zoomFactor = 0.6f;
 	float followSpeed = 3.0f;
 	float cameraHeight = 2.5f;
 	float playerHeight = 0.7f;
-	// float pitchSpeed = 0.5f;
 	float verticalSpeedDamping = 0.5f;
 };
 
-struct Lighting_params
+struct Light_params : public SerializableParams
 {
+	Light_params()
+	{
+		REGISTER_PROP(lightPos);
+		REGISTER_PROP(lightColor);
+		REGISTER_PROP(ambient);
+	}
+
 	glm::vec3 lightPos = {0, 5, 15};
 	glm::vec3 lightColor = {1, 1, 1};
-	glm::vec3 ambient = {0.1, 0.1, 0.1};
+	glm::vec3 ambient = {0.1f, 0.1f, 0.1f};
 };
 
 #if WITH_EDITOR
@@ -54,16 +73,24 @@ struct CameraParams : public EditorTool
 		ImGui::SliderFloat("playerHeight", &params->playerHeight, 0.f, 8.8f);
 		ImGui::SliderFloat("verticalSpeedDamping",
 						   &params->verticalSpeedDamping, 0.0f, 1.f);
+
+		if (ImGui::Button("Save"))
+		{
+			nlohmann::json j;
+			params->serialize(j);
+			std::ofstream file("gamedata/CameraParams.json");
+			file << j.dump();
+		}
 	}
 
   private:
 	Camera_params *params;
 };
 
-struct LightingParams : public EditorTool
+struct LightParams : public EditorTool
 {
-	LightingParams(Lighting_params *_params)
-		: EditorTool("LightingParams"), params(_params)
+	LightParams(Light_params *_params)
+		: EditorTool("LightParams"), params(_params)
 	{
 	}
 
@@ -72,15 +99,23 @@ struct LightingParams : public EditorTool
 		ImGui::DragFloat3("lightPos", &params->lightPos[0], 0.1f);
 		ImGui::ColorEdit3("lightColor", &params->lightColor[0]);
 		ImGui::ColorEdit3("ambient", &params->ambient[0]);
+
+		if (ImGui::Button("Save"))
+		{
+			nlohmann::json j;
+			params->serialize(j);
+			std::ofstream file("gamedata/LightParams.json");
+			file << j.dump();
+		}
 	}
 
   private:
-	Lighting_params *params;
+	Light_params *params;
 };
 #endif
 
 Camera_params cameraParams;
-Lighting_params lightingParams;
+Light_params lightParams;
 
 void GameWorld::init()
 {
@@ -89,9 +124,24 @@ void GameWorld::init()
 	// mesh = Engine::instance->renderer->createQuadMesh();
 	mesh = Engine::instance->renderer->loadMesh("gamedata/Suzanne.obj");
 
+	// Load params from file
+	std::ifstream cameraParamsFile("gamedata/CameraParams.json");
+	if (cameraParamsFile.is_open())
+	{
+		nlohmann::json data = nlohmann::json::parse(cameraParamsFile);
+		cameraParams.deserialize(data);
+	}
+
+	std::ifstream lightParamsFile("gamedata/LightParams.json");
+	if (lightParamsFile.is_open())
+	{
+		nlohmann::json data = nlohmann::json::parse(lightParamsFile);
+		lightParams.deserialize(data);
+	}
+
 #if WITH_EDITOR
 	Engine::instance->editor->registerTool<CameraParams>(&cameraParams);
-	Engine::instance->editor->registerTool<LightingParams>(&lightingParams);
+	Engine::instance->editor->registerTool<LightParams>(&lightParams);
 #endif
 }
 
@@ -148,9 +198,8 @@ void GameWorld::update(float dt)
 		asteroid->position = randomPointInCube(glm::vec3(0, 4.5f, 0), 5);
 	}
 
-	Engine::instance->renderer->setLighting(lightingParams.lightPos,
-											lightingParams.lightColor,
-											lightingParams.ambient);
+	Engine::instance->renderer->setLighting(
+		lightParams.lightPos, lightParams.lightColor, lightParams.ambient);
 }
 
 void GameWorld::render()
