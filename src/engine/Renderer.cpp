@@ -241,7 +241,9 @@ bool Renderer::init()
 	glEnable(GL_DEPTH_TEST);
 
 	glEnable(GL_BLEND);
+
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_CULL_FACE);
 
 	// White texture to use for shaders if a texture is not specified
 	glGenTextures(1, &mRendererImpl->whiteTexture);

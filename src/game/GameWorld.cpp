@@ -31,7 +31,7 @@ struct Camera_params
 
 struct Lighting_params
 {
-	glm::vec3 lightPos = {0, 10, -10};
+	glm::vec3 lightPos = {0, 5, 15};
 	glm::vec3 lightColor = {1, 1, 1};
 	glm::vec3 ambient = {0.1, 0.1, 0.1};
 };
@@ -155,8 +155,8 @@ void GameWorld::update(float dt)
 
 void GameWorld::render()
 {
-	 Engine::instance->renderer->drawQuad(
-		glm::vec3(0, 0, 0), glm::vec3(90, 0, 0), glm::vec3(10, 10, 10),
+	Engine::instance->renderer->drawQuad(
+		glm::vec3(0, 0, 0), glm::vec3(-90, 0, 0), glm::vec3(10, 10, 10),
 		glm::vec4(104 / 255.f, 218 / 255.f, 100 / 255.f, 1));
 
 	Engine::instance->renderer->drawMesh(mesh, glm::mat4(1.0f));
