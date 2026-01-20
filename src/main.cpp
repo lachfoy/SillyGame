@@ -70,8 +70,12 @@ int main(int argc, char *argv[])
 			// -------------------------------------------------------
 			engine.renderer->beginFrame();
 			engine.renderer->clear(0.2f, 0.3f, 0.6f);
-
 			engine.world->render();
+			engine.renderer->endFrame();
+
+			engine.renderer->begin2D(800, 600);
+			engine.renderer->drawUIQuad(glm::vec2(0,0), glm::vec2(50, 50), glm::vec4(0, 1, 1, 1));
+			engine.renderer->end2D();
 
 #if WITH_EDITOR
 			engine.editor->beginFrame();
@@ -79,7 +83,6 @@ int main(int argc, char *argv[])
 			engine.editor->endFrame();
 #endif
 
-			engine.renderer->endFrame();
 			SDL_GL_SwapWindow(engine.window);
 		}
 

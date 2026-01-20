@@ -44,7 +44,12 @@ class Renderer
 	void drawMesh(Mesh mesh, glm::mat4 transform, Texture texture = {});
 
 	void drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
-				  glm::vec4 color, Texture texture = {}) const;
+				  glm::vec4 color, Texture texture = {});
+
+	void begin2D(int screenWidth, int screenHeight);
+	void end2D();
+
+	void drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
 
   private:
 	RendererImpl *mRendererImpl = nullptr;

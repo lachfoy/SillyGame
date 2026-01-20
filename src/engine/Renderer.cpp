@@ -54,6 +54,13 @@ struct RendererImpl
 	// mesh cache
 	std::unordered_map<int64_t, GLMesh> meshes;
 	int64_t nextMeshId = 1;
+
+	// UI
+	GLuint uiShader = 0;
+	GLuint uiVao = 0;
+	GLuint uiVbo = 0;
+
+	glm::mat4 uiProj;
 };
 
 struct alignas(16) CameraData
@@ -78,6 +85,12 @@ struct Vertex
 {
 	glm::vec3 position;
 	glm::vec3 normal;
+	glm::vec2 uv;
+};
+
+struct UIVertex
+{
+	glm::vec2 pos; // local quad position
 	glm::vec2 uv;
 };
 
@@ -237,14 +250,6 @@ bool Renderer::init()
 
 	glBindVertexArray(0);
 
-	// --- GL State --------------------------------------------------------
-	glEnable(GL_DEPTH_TEST);
-
-	glEnable(GL_BLEND);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_CULL_FACE);
-
 	// White texture to use for shaders if a texture is not specified
 	glGenTextures(1, &mRendererImpl->whiteTexture);
 	glBindTexture(GL_TEXTURE_2D, mRendererImpl->whiteTexture);
@@ -254,6 +259,88 @@ bool Renderer::init()
 				 data);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	// --- UI --------------------------------------------------------
+	const char *uiVertexSrc = R"(
+        #version 460 core
+
+        layout (location = 0) in vec2 aPos;
+		layout (location = 1) in vec2 aUV;
+
+		uniform mat4 uMVP;
+
+		out vec2 vUV;
+
+        void main()
+        {
+			vUV = aUV;
+			gl_Position = uMVP * vec4(aPos, 0.0, 1.0);
+        }
+    )";
+
+	const char *uiFragSrc = R"(
+        #version 460 core
+
+		in vec2 vUV;
+
+		uniform sampler2D uTexture;
+		uniform vec4 uColor;
+
+		out vec4 FragColor;
+
+		void main()
+		{
+			vec4 tex = texture(uTexture, vUV);
+			FragColor = tex * uColor;
+		}
+    )";
+
+	GLuint uiVertexShader = glCreateShader(GL_VERTEX_SHADER);
+	glShaderSource(uiVertexShader, 1, &uiVertexSrc, nullptr);
+	glCompileShader(uiVertexShader);
+
+	GLuint uiFragShader = glCreateShader(GL_FRAGMENT_SHADER);
+	glShaderSource(uiFragShader, 1, &uiFragSrc, nullptr);
+	glCompileShader(uiFragShader);
+
+	mRendererImpl->uiShader = glCreateProgram();
+	glAttachShader(mRendererImpl->uiShader, uiVertexShader);
+	glAttachShader(mRendererImpl->uiShader, uiFragShader);
+	glLinkProgram(mRendererImpl->uiShader);
+
+	glDeleteShader(uiVertexShader);
+	glDeleteShader(uiFragShader);
+
+	// clang-format off
+	std::vector<UIVertex> uiQuad = {
+		{{0, 0}, {0, 0}},
+		{{1, 0}, {1, 0}},
+		{{1, 1}, {1, 1}},
+
+		{{0, 0}, {0, 0}},
+		{{1, 1}, {1, 1}},
+		{{0, 1}, {0, 1}},
+	};
+	// clang-format on
+
+	glGenBuffers(1, &mRendererImpl->uiVbo);
+
+	glGenVertexArrays(1, &mRendererImpl->uiVao);
+	glBindVertexArray(mRendererImpl->uiVao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, mRendererImpl->uiVbo);
+	glBufferData(GL_ARRAY_BUFFER, uiQuad.size() * sizeof(UIVertex),
+				 uiQuad.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(UIVertex),
+						  (void *)offsetof(UIVertex, pos));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(UIVertex),
+						  (void *)offsetof(UIVertex, uv));
+
+	glBindVertexArray(0);
 
 	return true;
 }
@@ -274,6 +361,24 @@ void Renderer::shutdown() noexcept
 	{
 		glDeleteTextures(1, &mRendererImpl->whiteTexture);
 		mRendererImpl->whiteTexture = 0;
+	}
+
+	if (mRendererImpl->uiVbo != 0)
+	{
+		glDeleteBuffers(1, &mRendererImpl->uiVbo);
+		mRendererImpl->uiVbo = 0;
+	}
+
+	if (mRendererImpl->uiVao != 0)
+	{
+		glDeleteVertexArrays(1, &mRendererImpl->uiVao);
+		mRendererImpl->uiVao = 0;
+	}
+
+	if (mRendererImpl->uiShader != 0)
+	{
+		glDeleteProgram(mRendererImpl->uiShader);
+		mRendererImpl->uiShader = 0;
 	}
 
 	if (mRendererImpl->quadVbo != 0)
@@ -528,6 +633,14 @@ void Renderer::beginFrame()
 	glBindBuffer(GL_UNIFORM_BUFFER, mRendererImpl->cameraUbo);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(CameraData), &data);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+	// GL state
+	glEnable(GL_DEPTH_TEST);
+
+	glEnable(GL_BLEND);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_CULL_FACE);
 }
 
 void Renderer::endFrame()
@@ -586,10 +699,8 @@ void Renderer::drawMesh(Mesh mesh, glm::mat4 transform, Texture texture)
 }
 
 void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
-						glm::vec4 color, Texture texture) const
+						glm::vec4 color, Texture texture)
 {
-	glUseProgram(mRendererImpl->shaderProgram);
-
 	glm::mat4 model = glm::mat4(1.0f);
 
 	// Translate
@@ -602,6 +713,8 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 
 	// Scale
 	model = glm::scale(model, glm::vec3(size.x, size.y, 1.0f));
+
+	glUseProgram(mRendererImpl->shaderProgram);
 
 	glUniformMatrix4fv(
 		glGetUniformLocation(mRendererImpl->shaderProgram, "model"), 1,
@@ -620,6 +733,49 @@ void Renderer::drawQuad(glm::vec3 position, glm::vec3 rotation, glm::vec3 size,
 					  : mRendererImpl->whiteTexture);
 
 	glBindVertexArray(mRendererImpl->quadVao);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+}
+
+void Renderer::begin2D(int screenWidth, int screenHeight)
+{
+	mRendererImpl->uiProj =
+		glm::ortho(0.0f, static_cast<float>(screenWidth),
+				   static_cast<float>(screenHeight), 0.0f, -1.0f, 1.0f);
+
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void Renderer::end2D() {}
+
+void Renderer::drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color)
+{
+	glm::mat4 model = glm::mat4(1.0f);
+
+	model = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.0f));
+
+	model = glm::scale(model, glm::vec3(size, 1.0f));
+
+	glm::mat4 mvp = mRendererImpl->uiProj * model;
+
+	glUseProgram(mRendererImpl->uiShader);
+
+	glUniformMatrix4fv(glGetUniformLocation(mRendererImpl->uiShader, "uMVP"), 1,
+					   GL_FALSE, glm::value_ptr(mvp));
+
+	glUniform4fv(glGetUniformLocation(mRendererImpl->uiShader, "uColor"), 1,
+				 glm::value_ptr(color));
+
+	glUniform1i(glGetUniformLocation(mRendererImpl->uiShader, "uTexture"),
+				0);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, mRendererImpl->whiteTexture);
+
+	glBindVertexArray(mRendererImpl->uiVao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
 }
