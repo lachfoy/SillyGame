@@ -14,6 +14,8 @@ Engine::~Engine()
 		world.reset();
 	}
 
+	testUI.reset();
+
 	renderer->shutdown();
 	renderer.reset();
 
@@ -55,7 +57,7 @@ bool Engine::init()
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
 						SDL_GL_CONTEXT_PROFILE_CORE);
 
-	window = SDL_CreateWindow("SillyGame", 800, 600, SDL_WINDOW_OPENGL);
+	window = SDL_CreateWindow("SillyGame", 1280, 720, SDL_WINDOW_OPENGL);
 	if (!window)
 	{
 		std::cerr << "SDL_CreateWindow failed: " << SDL_GetError() << "\n";
@@ -89,6 +91,9 @@ bool Engine::init()
 
 	renderer = std::make_unique<Renderer>();
 	renderer->init();
+
+	testUI = std::make_unique<TestUI>();
+	testUI->Init();
 
 	return true;
 }

@@ -38,6 +38,9 @@
     <ClCompile Include="src\game\Asteroid.cpp">
       <Filter>src\game</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\UI\UILayoutTest.cpp">
+      <Filter>src\engine\UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -48,6 +51,9 @@
     </Filter>
     <Filter Include="src\game">
       <UniqueIdentifier>{d65c3a1a-b5bf-436d-8591-3065e0108688}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\engine\UI">
+      <UniqueIdentifier>{806629b0-5f93-4fc0-bfd4-98cbc057bb86}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -88,6 +94,12 @@
       <Filter>src\engine</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\SerializableParams.h">
+      <Filter>src\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\UI\UILayoutTest.h">
+      <Filter>src\engine\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\IconsMaterialSymbols.h">
       <Filter>src\engine</Filter>
     </ClInclude>
   </ItemGroup>

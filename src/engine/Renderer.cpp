@@ -626,7 +626,7 @@ void Renderer::beginFrame()
 	CameraData data;
 	data.view = Engine::instance->camera->getViewMatrix();
 	data.proj = glm::perspective(
-		glm::radians(50.0f), 800.0f / 600.0f, 0.1f,
+		glm::radians(50.0f), 1280.0f / 720.0f, 0.1f,
 		100.0f); // Right now the camera doesn't decide projection.
 	data.cameraPos = Engine::instance->camera->position;
 

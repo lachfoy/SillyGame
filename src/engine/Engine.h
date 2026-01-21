@@ -10,6 +10,7 @@
 #include "Input.h"
 #include "Renderer.h"
 #include "World.h"
+#include "UI/UILayoutTest.h"
 
 struct Engine
 {
@@ -27,6 +28,7 @@ struct Engine
 	std::unique_ptr<Camera> camera;
 	std::unique_ptr<Renderer> renderer;
 	std::unique_ptr<World> world;
+	std::unique_ptr<TestUI> testUI;
 #if WITH_EDITOR
 	std::unique_ptr<Editor> editor;
 #endif

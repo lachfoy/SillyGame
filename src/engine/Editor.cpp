@@ -6,6 +6,8 @@
 
 #include "Engine.h"
 
+#include "IconsMaterialSymbols.h"
+
 void Editor::init(SDL_Window *window, SDL_GLContext glContext)
 {
 	IMGUI_CHECKVERSION();
@@ -13,6 +15,16 @@ void Editor::init(SDL_Window *window, SDL_GLContext glContext)
 	ImGuiIO &io = ImGui::GetIO();
 	io.ConfigFlags |=
 		ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+
+	 io.Fonts->AddFontDefault();
+
+	 ImFontConfig font_cfg;
+	 font_cfg.MergeMode = true;
+	 font_cfg.PixelSnapH = true;
+	 static const ImWchar icon_ranges[] = {ICON_MIN_MS, ICON_MAX_MS,
+										   0};
+	 io.Fonts->AddFontFromFileTTF("gamedata/MaterialSymbolsOutlined[FILL,GRAD,opsz,wght].ttf", 16.0f,
+								  &font_cfg, icon_ranges); 
 
 	ImGui::StyleColorsDark();
 
