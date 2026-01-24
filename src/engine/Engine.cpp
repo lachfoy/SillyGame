@@ -14,6 +14,7 @@ Engine::~Engine()
 		world.reset();
 	}
 
+	testUI->Shutdown();
 	testUI.reset();
 
 	renderer->shutdown();

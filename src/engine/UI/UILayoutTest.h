@@ -106,7 +106,7 @@ class FrameworkElement : public UIElement
 	virtual ~FrameworkElement() {}
 
 #if WITH_EDITOR
-	virtual const char *getClassName() =0;
+	virtual const char *getClassName() = 0;
 #endif
 
 	virtual void Measure(Size availableSize) override;
@@ -114,10 +114,6 @@ class FrameworkElement : public UIElement
 
 	virtual void Render(Renderer &renderer) override
 	{
-		renderer.drawUIQuad(glm::vec2(layoutRect.x, layoutRect.y),
-							glm::vec2(layoutRect.width, layoutRect.height),
-							glm::vec4(1.0f, 0.0f, 0.0f, 0.5f));
-
 		// Framework elements render themselves
 	}
 
@@ -153,7 +149,7 @@ class Panel : public FrameworkElement
 	{
 		renderer.drawUIQuad(glm::vec2(layoutRect.x, layoutRect.y),
 							glm::vec2(layoutRect.width, layoutRect.height),
-							glm::vec4(1.0f, 0.0f, 0.0f, 0.5f));
+							background);
 
 		// Panels render children
 		for (const auto &child : mChildren)
@@ -161,6 +157,8 @@ class Panel : public FrameworkElement
 			child->Render(renderer);
 		}
 	}
+
+	glm::vec4 background = {1.f, 1.f, 1.f, 0.5f};
 
   protected:
 	Size MeasureOverride(Size available) override
@@ -294,6 +292,12 @@ class Canvas : public Panel
 #endif
 };
 
+enum class Orientation
+{
+	Horizontal,
+	Vertical
+};
+
 class StackPanel : public Panel
 {
   public:
@@ -302,6 +306,7 @@ class StackPanel : public Panel
 #endif
 
 	float spacing = 0;
+	Orientation orientation = Orientation::Vertical;
 
   protected:
 	Size MeasureOverride(Size available) override
@@ -312,8 +317,25 @@ class StackPanel : public Panel
 		{
 			child->Measure(available);
 
-			total.height += child->desiredSize.height + spacing;
-			total.width = std::max(total.width, child->desiredSize.width);
+			if (orientation == Orientation::Vertical)
+			{
+				total.height += child->desiredSize.height;
+				total.width = std::max(total.width, child->desiredSize.width);
+			}
+			else // Horizontal
+			{
+				total.width += child->desiredSize.width;
+				total.height =
+					std::max(total.height, child->desiredSize.height);
+			}
+		}
+
+		if (!mChildren.empty())
+		{
+			if (orientation == Orientation::Vertical)
+				total.height += spacing * (mChildren.size() - 1);
+			else // Horizontal
+				total.width += spacing * (mChildren.size() - 1);
 		}
 
 		return total;
@@ -325,10 +347,22 @@ class StackPanel : public Panel
 
 		for (const auto &child : mChildren)
 		{
-			Rect r{rect.x, rect.y + offset, rect.width,
-				   child->desiredSize.height};
+			Rect r;
+
+			if (orientation == Orientation::Vertical)
+			{
+				r = {rect.x, rect.y + offset, rect.width,
+					 child->desiredSize.height};
+				offset += r.height + spacing;
+			}
+			else // Horizontal
+			{
+				r = {rect.x + offset, rect.y, child->desiredSize.width,
+					 rect.height};
+				offset += r.width + spacing;
+			}
+
 			child->Arrange(r);
-			offset += r.height + spacing;
 		}
 	}
 };
@@ -341,14 +375,13 @@ class Image : public FrameworkElement
 #endif
 
 	Size sourceSize;
+	Texture texture = {};
 
 	void Render(Renderer &renderer) override
 	{
-		FrameworkElement::Render(renderer);
-
 		renderer.drawUIQuad(glm::vec2(layoutRect.x, layoutRect.y),
 							glm::vec2(layoutRect.width, layoutRect.height),
-							glm::vec4(0.0f, 1.0f, 1.0f, 1.0f));
+							glm::vec4(0.0f, 1.0f, 1.0f, 1.0f), texture);
 	}
 
   protected:
@@ -365,8 +398,10 @@ class TestUI
 {
   public:
 	void Init();
+	void Shutdown();
 	void Render();
 
   private:
 	std::unique_ptr<Panel> mRoot;
+	std::vector<Texture> mUITextures;
 };

@@ -16,7 +16,7 @@ class UIInspector : public EditorTool
 
 	void draw() override
 	{
-		ImGui::BeginChild("Hierarchy", ImVec2(0, 0), 0);
+		ImGui::BeginChild("Layout Tree", ImVec2(0, 0));
 		drawTree2(mRootPanel);
 		ImGui::EndChild();
 
@@ -26,7 +26,7 @@ class UIInspector : public EditorTool
 
 		if (gSelectedElement)
 		{
-			ImDrawList *dl = ImGui::GetForegroundDrawList();
+			ImDrawList *dl = ImGui::GetBackgroundDrawList();
 
 			auto rect = gSelectedElement->layoutRect;
 
@@ -90,137 +90,258 @@ class UIInspector : public EditorTool
 			return;
 		}
 
-		drawInfo(gSelectedElement);
+		drawInfo2(gSelectedElement);
 	}
 
-	void drawInfo(FrameworkElement *element)
+	void drawInfo2(FrameworkElement *element)
 	{
-		ImGui::DragFloat("Width", &element->width);
-		ImGui::DragFloat("Height", &element->height);
-
-		ImGui::Text("Actual Width %.3f", element->layoutRect.width);
-		ImGui::Text("Actual Height %.3f", element->layoutRect.height);
-
-		ImGui::DragFloat4("Margin", &element->margin.bottom);
-
-		// Horizontal alignment
-		ImGui::Text("Horizontal Alignment");
-
-		HorizontalAlignment &hAlign = element->horizontalAlignment;
-
-		ImGui::PushStyleVar(
-			ImGuiStyleVar_SelectableTextAlign,
-			ImVec2(0.5f, 0.5f)); // I dont even think this did anything
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_ALIGN_HORIZONTAL_LEFT,
-							  hAlign == HorizontalAlignment::Left, 0,
-							  ImVec2(16, 16)))
+		if (!element)
 		{
-			hAlign = HorizontalAlignment::Left;
+			return;
 		}
 
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_ALIGN_HORIZONTAL_CENTER,
-							  hAlign == HorizontalAlignment::Center, 0,
-							  ImVec2(16, 16)))
+		constexpr float columnWidth = 160.f;
+
+		if (ImGui::TreeNodeEx("Layout", ImGuiTreeNodeFlags_DefaultOpen))
 		{
-			hAlign = HorizontalAlignment::Center;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_ALIGN_HORIZONTAL_RIGHT,
-							  hAlign == HorizontalAlignment::Right, 0,
-							  ImVec2(16, 16)))
-		{
-			hAlign = HorizontalAlignment::Right;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_HORIZONTAL_DISTRIBUTE,
-							  hAlign == HorizontalAlignment::Stretch, 0,
-							  ImVec2(16, 16)))
-		{
-			hAlign = HorizontalAlignment::Stretch;
-		}
-
-		ImGui::PopStyleVar(); // ImGuiStyleVar_SelectableTextAlign
-
-		// Horizontal alignment
-		ImGui::Text("Vertical Alignment");
-
-		VerticalAlignment &vAlign = element->verticalAlignment;
-
-		ImGui::PushStyleVar(
-			ImGuiStyleVar_SelectableTextAlign,
-			ImVec2(0.5f, 0.5f)); // I dont even think this did anything
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_VERTICAL_ALIGN_TOP,
-							  vAlign == VerticalAlignment::Top, 0,
-							  ImVec2(16, 16)))
-		{
-			vAlign = VerticalAlignment::Top;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_VERTICAL_ALIGN_CENTER,
-							  vAlign == VerticalAlignment::Center, 0,
-							  ImVec2(16, 16)))
-		{
-
-			vAlign = VerticalAlignment::Center;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_VERTICAL_ALIGN_BOTTOM,
-							  vAlign == VerticalAlignment::Bottom, 0,
-							  ImVec2(16, 16)))
-		{
-			vAlign = VerticalAlignment::Bottom;
-		}
-
-		ImGui::SameLine();
-		if (ImGui::Selectable(ICON_MS_VERTICAL_DISTRIBUTE,
-							  vAlign == VerticalAlignment::Stretch, 0,
-							  ImVec2(16, 16)))
-		{
-			vAlign = VerticalAlignment::Stretch;
-		}
-
-		ImGui::PopStyleVar(); // ImGuiStyleVar_SelectableTextAlign
-
-		// Canvas attached properties
-		if (auto *canvas = dynamic_cast<Canvas *>(element->owningPanel))
-		{
-			float tmpCanvasLeft = canvas->mSlots[element].left;
-			if (ImGui::DragFloat("Canvas Left", &tmpCanvasLeft))
+			// Width
+			ImGui::BeginGroup();
 			{
-				canvas->SetLeft(element, tmpCanvasLeft);
+				char widthLabelBuf[32];
+				std::snprintf(widthLabelBuf, sizeof(widthLabelBuf),
+							  "Width (%.2f)", element->layoutRect.width);
+
+				ImGui::Text(widthLabelBuf);
+
+				ImGui::SameLine(columnWidth);
+
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::DragFloat("##Width", &element->width);
+
+				ImGui::EndGroup();
 			}
 
-			float tmpCanvasTop = canvas->mSlots[element].top;
-			if (ImGui::DragFloat("Canvas Top", &tmpCanvasTop))
+			// Height
+			ImGui::BeginGroup();
 			{
-				canvas->SetTop(element, tmpCanvasTop);
+				char heightLabelBuf[32];
+				std::snprintf(heightLabelBuf, sizeof(heightLabelBuf),
+							  "Height (%.2f)", element->layoutRect.height);
+
+				ImGui::Text(heightLabelBuf);
+
+				ImGui::SameLine(columnWidth);
+
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::DragFloat("##Height", &element->height);
+
+				ImGui::EndGroup();
 			}
 
-			float tmpCanvasRight = canvas->mSlots[element].right;
-			if (ImGui::DragFloat("Canvas Right", &tmpCanvasRight))
+			// Margin
+			ImGui::BeginGroup();
 			{
-				canvas->SetRight(element, tmpCanvasRight);
+				ImGui::Text("Margin");
+
+				float startX = ImGui::GetCursorPosX();
+				ImGui::SameLine(columnWidth);
+
+				ImGui::SetNextItemWidth(40.0f);
+				ImGui::DragFloat(ICON_MS_BORDER_LEFT, &element->margin.left,
+								 1.f, 0.f, 0.f, "%.0f");
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(40.0f);
+				ImGui::DragFloat(ICON_MS_BORDER_RIGHT, &element->margin.right,
+								 1.f, 0.f, 0.f, "%.0f");
+
+				ImGui::SetCursorPosX(startX + columnWidth);
+
+				ImGui::SetNextItemWidth(40.0f);
+				ImGui::DragFloat(ICON_MS_BORDER_TOP, &element->margin.top, 1.f,
+								 0.f, 0.f, "%.0f");
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(40.0f);
+				ImGui::DragFloat(ICON_MS_BORDER_BOTTOM, &element->margin.bottom,
+								 1.f, 0.f, 0.f, "%.0f");
+
+				ImGui::EndGroup();
 			}
 
-			float tmpCanvasBottom = canvas->mSlots[element].bottom;
-			if (ImGui::DragFloat("Canvas Bottom", &tmpCanvasBottom))
+			// Horizontal alignment
+			auto hAlignButton =
+				[element](const char *label, HorizontalAlignment hAlign)
 			{
-				canvas->SetBottom(element, tmpCanvasBottom);
+				ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign,
+									ImVec2(0.5f, 0.5f));
+				if (ImGui::Selectable(
+						label, element->horizontalAlignment == hAlign,
+						ImGuiSelectableFlags_None, ImVec2(15, 15)))
+				{
+					element->horizontalAlignment = hAlign;
+				}
+				ImGui::PopStyleVar();
+			};
+
+			ImGui::BeginGroup();
+			{
+				ImGui::Text("Horizontal Alignment");
+
+				ImGui::SameLine(columnWidth);
+
+				hAlignButton(ICON_MS_ALIGN_HORIZONTAL_LEFT,
+							 HorizontalAlignment::Left);
+				ImGui::SameLine();
+				hAlignButton(ICON_MS_ALIGN_HORIZONTAL_CENTER,
+							 HorizontalAlignment::Center);
+				ImGui::SameLine();
+				hAlignButton(ICON_MS_ALIGN_HORIZONTAL_RIGHT,
+							 HorizontalAlignment::Right);
+				ImGui::SameLine();
+				hAlignButton(ICON_MS_HORIZONTAL_DISTRIBUTE,
+							 HorizontalAlignment::Stretch);
+
+				ImGui::EndGroup();
 			}
+
+			// Vertical alignment
+			auto vAlignButton =
+				[element](const char *label, VerticalAlignment vAlign)
+			{
+				ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign,
+									ImVec2(0.5f, 0.5f));
+				if (ImGui::Selectable(
+						label, element->verticalAlignment == vAlign,
+						ImGuiSelectableFlags_None, ImVec2(15, 15)))
+				{
+					element->verticalAlignment = vAlign;
+				}
+				ImGui::PopStyleVar();
+			};
+
+			ImGui::BeginGroup();
+			{
+				ImGui::Text("Vertical Alignment");
+
+				ImGui::SameLine(columnWidth);
+
+				vAlignButton(ICON_MS_VERTICAL_ALIGN_TOP,
+							 VerticalAlignment::Top);
+				ImGui::SameLine();
+				vAlignButton(ICON_MS_VERTICAL_ALIGN_CENTER,
+							 VerticalAlignment::Center);
+				ImGui::SameLine();
+				vAlignButton(ICON_MS_VERTICAL_ALIGN_BOTTOM,
+							 VerticalAlignment::Bottom);
+				ImGui::SameLine();
+				vAlignButton(ICON_MS_VERTICAL_DISTRIBUTE,
+							 VerticalAlignment::Stretch);
+
+				ImGui::EndGroup();
+			}
+
+			// Canvas attached properties
+			if (auto *owningCanvas =
+					dynamic_cast<Canvas *>(element->owningPanel))
+			{
+				ImGui::BeginGroup();
+				{
+					ImGui::Text("Canvas Left");
+					ImGui::SameLine(columnWidth);
+
+					float tmpCanvasLeft = owningCanvas->mSlots[element].left;
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					if (ImGui::DragFloat("##Canvas Left", &tmpCanvasLeft))
+					{
+						owningCanvas->SetLeft(element, tmpCanvasLeft);
+					}
+
+					ImGui::Text("Canvas Top");
+					ImGui::SameLine(columnWidth);
+
+					float tmpCanvasTop = owningCanvas->mSlots[element].top;
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					if (ImGui::DragFloat("##Canvas Top", &tmpCanvasTop))
+					{
+						owningCanvas->SetTop(element, tmpCanvasTop);
+					}
+
+					ImGui::Text("Canvas Right");
+					ImGui::SameLine(columnWidth);
+
+					float tmpCanvasRight = owningCanvas->mSlots[element].right;
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					if (ImGui::DragFloat("##Canvas Right", &tmpCanvasRight))
+					{
+						owningCanvas->SetRight(element, tmpCanvasRight);
+					}
+
+					ImGui::Text("Canvas Bottom");
+					ImGui::SameLine(columnWidth);
+
+					float tmpCanvasBottom =
+						owningCanvas->mSlots[element].bottom;
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					if (ImGui::DragFloat("##Canvas Bottom", &tmpCanvasBottom))
+					{
+						owningCanvas->SetBottom(element, tmpCanvasBottom);
+					}
+
+					ImGui::EndGroup();
+				}
+			}
+
+			// Stack panel
+			if (auto *stackPanel = dynamic_cast<StackPanel *>(element))
+			{
+				ImGui::BeginGroup();
+				{
+					ImGui::Text("Orientation");
+					ImGui::SameLine(columnWidth);
+
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+
+					const char *items[] = {"Horizontal", "Vertical"};
+					int orientationTmp = static_cast<int>(stackPanel->orientation);
+					if (ImGui::Combo("##Orientation", &orientationTmp, items,
+									 IM_ARRAYSIZE(items)))
+					{
+						stackPanel->orientation =
+							static_cast<Orientation>(orientationTmp);
+					}
+
+					ImGui::EndGroup();
+				}
+
+				ImGui::BeginGroup();
+				{
+					ImGui::Text("Spacing");
+					ImGui::SameLine(columnWidth);
+
+					ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+					ImGui::DragFloat("##Spacing", &stackPanel->spacing);
+
+					ImGui::EndGroup();
+				}
+			}
+
+			ImGui::TreePop();
 		}
 
-		if (auto *stackPanel = dynamic_cast<StackPanel *>(element))
+		// Panel
+		if (auto *panel = dynamic_cast<Panel *>(element))
 		{
-			ImGui::DragFloat("Spacing", &stackPanel->spacing);
+			ImGui::BeginGroup();
+			{
+				ImGui::Text("Background");
+				ImGui::SameLine(columnWidth);
+
+				ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+				ImGui::ColorEdit4("##Background", (float *)&panel->background,
+								  ImGuiColorEditFlags_NoInputs |
+									  ImGuiColorEditFlags_NoLabel);
+
+				ImGui::EndGroup();
+			}
 		}
 	}
 
@@ -306,40 +427,70 @@ void FrameworkElement::Arrange(Rect finalRect)
 	Rect arranged = {x, y, arrangedWidth, arrangedHeight};
 
 	layoutRect = arranged;
-
 	ArrangeOverride(arranged);
 }
 
 void TestUI::Init()
 {
+	auto *renderer = Engine::instance->renderer.get();
+
+	auto loadTex = [this, renderer](const char *path)
+	{
+		Texture tex = renderer->loadTexture(path);
+		mUITextures.push_back(tex);
+		return tex;
+	};
+
 	mRoot = std::make_unique<Panel>();
 
 #if WITH_EDITOR
 	Engine::instance->editor->registerTool<UIInspector>(mRoot.get());
 #endif
 
+	auto *canvas = mRoot->AddChild<Canvas>();
+	canvas->width = 400.f;
+	canvas->height = 400.f;
+
+	auto *img = canvas->AddChild<Image>();
+	img->sourceSize = {100, 100};
+	canvas->SetLeft(img, 10.f);
+	canvas->SetTop(img, 10.f);
+
 	auto *stackPanel = mRoot->AddChild<StackPanel>();
+	stackPanel->horizontalAlignment = HorizontalAlignment::Center;
+	stackPanel->verticalAlignment = VerticalAlignment::Center;
 
 	for (int i = 0; i < 4; ++i)
 	{
 		auto *img = stackPanel->AddChild<Image>();
 		img->sourceSize = {100, 100};
-		img->horizontalAlignment = HorizontalAlignment::Center;
-		img->verticalAlignment = VerticalAlignment::Center;
+		img->margin = {10.f, 10.f, 10.f, 10.f};
 	}
+}
 
-	/*auto *canvas = mRoot->AddChild<Canvas>();
-	canvas->width = 300;
-	canvas->height = 300;
-
-	auto *thingInCanvas = canvas->AddChild<Image>();
-	thingInCanvas->sourceSize = {50, 50};*/
+void TestUI::Shutdown()
+{
+	auto *renderer = Engine::instance->renderer.get();
+	for (auto tex : mUITextures)
+	{
+		renderer->deleteTexture(tex);
+	}
 }
 
 void TestUI::Render()
 {
+	// Perform layout
 	mRoot->Measure({800, 600});
 	mRoot->Arrange({50, 50, 800, 600});
 
-	mRoot->Render(*Engine::instance->renderer.get());
+	// Draw a viewport background
+	auto *renderer = Engine::instance->renderer.get();
+
+	renderer->drawUIQuad(
+		glm::vec2(mRoot->layoutRect.x, mRoot->layoutRect.y),
+		glm::vec2(mRoot->layoutRect.width, mRoot->layoutRect.height),
+		glm::vec4(0.5f, 0.5f, 0.5f, 1.f));
+
+	// Render the tree
+	mRoot->Render(*renderer);
 }

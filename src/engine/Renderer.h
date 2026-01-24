@@ -49,7 +49,8 @@ class Renderer
 	void begin2D(int screenWidth, int screenHeight);
 	void end2D();
 
-	void drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color);
+	void drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color,
+					Texture texture = {});
 
   private:
 	RendererImpl *mRendererImpl = nullptr;

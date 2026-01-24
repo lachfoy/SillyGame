@@ -313,13 +313,13 @@ bool Renderer::init()
 
 	// clang-format off
 	std::vector<UIVertex> uiQuad = {
-		{{0, 0}, {0, 0}},
-		{{1, 0}, {1, 0}},
-		{{1, 1}, {1, 1}},
+		{{0, 0}, {0, 1}},
+		{{1, 0}, {1, 1}},
+		{{1, 1}, {1, 0}},
 
-		{{0, 0}, {0, 0}},
-		{{1, 1}, {1, 1}},
-		{{0, 1}, {0, 1}},
+		{{0, 0}, {0, 1}},
+		{{1, 1}, {1, 0}},
+		{{0, 1}, {0, 0}},
 	};
 	// clang-format on
 
@@ -566,8 +566,7 @@ Mesh Renderer::loadMesh(const char *path)
 				if (idx.texcoord_index >= 0)
 				{
 					v.uv[0] = attrib.texcoords[2 * idx.texcoord_index + 0];
-					v.uv[1] =
-						1.0f - attrib.texcoords[2 * idx.texcoord_index + 1];
+					v.uv[1] = attrib.texcoords[2 * idx.texcoord_index + 1];
 				}
 
 				uint32_t newIndex = static_cast<uint32_t>(vertices.size());
@@ -751,7 +750,7 @@ void Renderer::begin2D(int screenWidth, int screenHeight)
 
 void Renderer::end2D() {}
 
-void Renderer::drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color)
+void Renderer::drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color, Texture texture)
 {
 	glm::mat4 model = glm::mat4(1.0f);
 
@@ -773,7 +772,10 @@ void Renderer::drawUIQuad(glm::vec2 position, glm::vec2 size, glm::vec4 color)
 				0);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, mRendererImpl->whiteTexture);
+	glBindTexture(GL_TEXTURE_2D,
+				  texture.id != 0
+					  ? reinterpret_cast<GLTexture *>(texture.id)->id
+					  : mRendererImpl->whiteTexture);
 
 	glBindVertexArray(mRendererImpl->uiVao);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
